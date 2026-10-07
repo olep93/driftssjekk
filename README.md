@@ -1,6 +1,6 @@
 # Driftssjekk
 
-Intern webapp for driftssjekker og egenkontroller i varehus. Grensesnittet er på norsk bokmål. Koden bruker Next.js 16, Supabase Auth/Postgres/Storage og en privat jobbkjø for PDF og e-post. Prosjektet er et utviklingsgrunnlag og er **ikke satt i produksjon**. Den separate prøvevisningen på `/demo` bruker fiktive data og lagrer ikke endringer.
+Intern webapp for driftssjekker og egenkontroller i varehus. Grensesnittet er på norsk bokmål. Koden bruker Next.js 16, Supabase Auth/Postgres/Storage og en privat jobbkjø for PDF og e-post. En fiktiv demo er tilgjengelig på [driftssjekk.vercel.app](https://driftssjekk.vercel.app). Dette er **ikke produksjonsbruk**. Den separate prøvevisningen på `/demo` bruker fiktive data og lagrer ikke endringer. Se [status før pilot og lansering](docs/release-readiness.md).
 
 ## Kort om løsningen
 
@@ -60,11 +60,11 @@ pnpm build
 
 SQL-migrasjonene kan syntakssjekkes med PostgreSQL-parser, men må også kjøres mot en ekte Supabase-instans. PDF-testen dekker flersidig A4, lange kommentarer og norske tegn. Bruk `PDF_VISUAL_QA=1 pnpm test` for å skrive en midlertidig QA-PDF under `tmp/pdfs/`; den er ikke et publisert rapportarkiv.
 
-Sist kontrollert 7. oktober 2026: typekontroll, lint, fem automatiske tester og produksjonsbygg besto. Alle fire SQL-migrasjoner ble syntakssjekket med PostgreSQL-parser. En fire siders eksempel-PDF ble rendret og visuelt kontrollert. Startsiden svarte HTTP 200 fra lokal Next-server. Migrasjoner og tilgangstester mot ekte Supabase gjenstår til en instans er konfigurert.
+Sist kontrollert 7. oktober 2026: typekontroll, lint og produksjonsbygg besto. Migrasjoner er kjørt i et eget Supabase-demoprosjekt med fiktive data, og RLS-tilgangstestene er kjørt der. Innlogging og rapport-PDF er prøvd mot Vercel-demoen. Dette bekrefter demomiljøet, ikke et ferdig produksjonsoppsett.
 
 ## Produksjonsavklaringer og kjente begrensninger
 
-- Database, RLS, Storage, invitasjoner, jobbkjø og e-post må testes samlet mot et ekte Supabase-prosjekt før bruk. Ingen eksterne nøkler eller kontoer følger med repoet.
+- Demoprosjektet bruker kun fiktive vurderinger. Oppsettet for virkelige brukere, varehus, invitasjoner, jobbkjø og e-post må testes samlet i et eget produksjonsmiljø.
 - Runde- og perioderapporter har nettsidegrunnlag og utskrift / «Lagre som PDF» i nettleseren, men egne arkiverte PDF-jobber for disse nivåene og store samleeksporter er ikke ferdigstilt.
 - Dashboard viser rundesnitt, rangering, områdematrise, dekning og tiltak. Mer avanserte diagrammer, tidsfilter og områdeanalyse kan bygges videre på de lagrede versjonene.
 - Store antall rapporter krever videre arbeid med databasepaginering og ytelse; gjeldende oversiktslaster henter inntil 500 rapporter.

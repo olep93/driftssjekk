@@ -1,6 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { CalendarRange, ClipboardCheck, FileText, LayoutDashboard, RotateCcw } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { areas, formatScore, totalFromQuarters } from "@/lib/scoring";
 
 type Report = { store: string; scores: [number, number, number, number]; date: string; comment: string };
@@ -28,11 +30,11 @@ const rounds: Round[] = [
 ];
 
 const stores = ["Tønsberg", "Mjøndalen", "Skien", "Sandefjord", "Kongsberg"];
-const nav: { id: View; label: string; icon: string }[] = [
-  { id: "oversikt", label: "Oversikt", icon: "▦" },
-  { id: "runder", label: "Runder", icon: "◷" },
-  { id: "rapporter", label: "Rapporter", icon: "▤" },
-  { id: "vurdering", label: "Prøv vurdering", icon: "✎" },
+const nav: { id: View; label: string; icon: LucideIcon }[] = [
+  { id: "oversikt", label: "Oversikt", icon: LayoutDashboard },
+  { id: "runder", label: "Runder", icon: CalendarRange },
+  { id: "rapporter", label: "Rapporter", icon: FileText },
+  { id: "vurdering", label: "Prøv vurdering", icon: ClipboardCheck },
 ];
 
 function total(report: Report) { return totalFromQuarters(report.scores)!; }
@@ -63,7 +65,7 @@ export function DemoClient() {
       <div className="workspace-label">ARBEIDSOMRÅDE</div>
       <div className="coop-chip"><span className="coop-dot" /> Coop Sørøst <span className="small">(fiktivt)</span></div>
       <nav aria-label="Prøvedemo">
-        {nav.map((item) => <button key={item.id} className={`demo-nav-button ${view === item.id ? "selected" : ""}`} onClick={() => switchView(item.id)} aria-current={view === item.id ? "page" : undefined}><span aria-hidden="true">{item.icon}</span>{item.label}</button>)}
+        {nav.map((item) => <button key={item.id} className={`demo-nav-button ${view === item.id ? "selected" : ""}`} onClick={() => switchView(item.id)} aria-current={view === item.id ? "page" : undefined}><item.icon size={18} strokeWidth={1.8} aria-hidden="true"/>{item.label}</button>)}
       </nav>
       <div className="sidebar-bottom"><span className="user-avatar">D</span><span className="user-name"><strong>Demobruker</strong><small>Fiktive data</small></span></div>
     </aside>
@@ -88,8 +90,15 @@ export function DemoClient() {
 
       {view === "rapporter" && <><header className="page-heading"><div><p className="eyebrow">Rapporter</p><h1>{activeReport ? activeReport.store : "Publiserte vurderinger"}</h1><p className="muted">{activeReport ? `${round.name} · ${activeReport.date}` : `Fiktive rapporter fra ${round.name.toLowerCase()}.`}</p></div>{activeReport && <div className="page-actions"><button className="button" onClick={() => setSelectedStore(null)}>← Tilbake til listen</button></div>}</header>{activeReport ? <article className="report-paper"><div className="report-top"><div><p className="eyebrow">Driftssjekk</p><h2>{activeReport.store}</h2><p className="muted">Coop Sørøst · {activeReport.date}</p></div>{pill(total(activeReport))}</div><p>{activeReport.comment}</p>{areas.map((area, index) => <section className="report-area" key={area.key}><h3>{area.label}{pill(activeReport.scores[index] / 4)}</h3><p className="muted">Fiktiv observasjon for {area.label.toLowerCase()}.</p></section>)}</article> : <section className="panel"><div className="table-wrap"><table><thead><tr><th>Varehus</th><th>Besøksdato</th><th>Total</th><th>Status</th><th></th></tr></thead><tbody>{sorted.map((report) => <tr key={report.store}><td>{report.store}</td><td>{report.date}</td><td>{pill(total(report))}</td><td><span className="status published">Publisert</span></td><td><button className="demo-link" onClick={() => setSelectedStore(report.store)}>Åpne →</button></td></tr>)}</tbody></table></div></section>}</>}
 
-      {view === "vurdering" && <><header className="page-heading"><div><p className="eyebrow">Interaktiv prøve</p><h1>Prøv en driftssjekk</h1><p className="muted">Juster karakterene i kvartsteg og se hvordan totalen beregnes.</p></div></header><div className="editor-grid"><div>{areas.map((area, index) => <section className="area-card" key={area.key}><div className="area-heading"><h2>{area.label}</h2>{pill(draftScores[index] / 4)}</div><label className="small muted" htmlFor={`demo-score-${index}`}>Karakter fra 1,00 til 10,00</label><div className="score-control"><button aria-label={`Senk ${area.label}`} onClick={() => updateScore(index, draftScores[index] - 1)}>−</button><input id={`demo-score-${index}`} value={formatScore(draftScores[index] / 4)} readOnly /><button aria-label={`Øk ${area.label}`} onClick={() => updateScore(index, draftScores[index] + 1)}>+</button><span className="score-note">Kvartsteg</span></div><label className="field">Kommentar<textarea value={comments[index]} onChange={(event) => setComments((current) => current.map((value, position) => position === index ? event.target.value : value))} placeholder="Skriv en observasjon" /></label></section>)}</div><aside className="panel summary-box"><p className="eyebrow">Din prøvevurdering</p><h2>Samlet resultat</h2><strong className="demo-total">{formatScore(draftTotal)}</strong><p className="muted small">Summen av de fire karakterene delt på fire. Underliggende kvartsteg beholdes.</p><div className="demo-summary-list">{areas.map((area, index) => <div key={area.key}><span>{area.label}</span><strong>{formatScore(draftScores[index] / 4)}</strong></div>)}</div><button className="button" onClick={() => { setDraftScores([32, 30, 28, 29]); setComments(["God orden og tydelig merking.", "", "", "Varemottaket bør følges opp."]); }}>Tilbakestill prøven</button><p className="muted small demo-save-note">Dette er en prøvevisning. Ingen data blir publisert eller lagret.</p></aside></div></>}
+      {view === "vurdering" && <>
+        <header className="page-heading demo-assessment-heading"><div><p className="eyebrow">Prøvemodus</p><h1>Prøv en driftssjekk</h1><p className="muted">Vurder de fire områdene og se resultatet oppdatere seg med én gang.</p></div></header>
+        <div className="editor-grid demo-assessment-layout"><div className="demo-assessment-areas">{areas.map((area, index) => <section className="demo-assessment-card" key={area.key}>
+          <div className="demo-assessment-head"><div className="demo-assessment-title"><span className="demo-area-number">{String(index + 1).padStart(2, "0")}</span><div><span className="demo-overline">Område {index + 1} av 4</span><h2>{area.label}</h2></div></div><div className="demo-assessment-score"><span>Karakter</span><output htmlFor={`demo-score-${index}`}>{formatScore(draftScores[index] / 4)}<small> / 10</small></output></div></div>
+          <div className="demo-range-field"><div className="demo-range-label"><label htmlFor={`demo-score-${index}`}>Vurdering</label><span>Steg på 0,25</span></div><div className="demo-range-control"><button type="button" aria-label={`Senk ${area.label} med 0,25`} disabled={draftScores[index] <= 4} onClick={() => updateScore(index, draftScores[index] - 1)}>−</button><input id={`demo-score-${index}`} type="range" min={4} max={40} step={1} value={draftScores[index]} onChange={(event) => updateScore(index, Number(event.target.value))} aria-valuetext={`${formatScore(draftScores[index] / 4)} av 10`} style={{background:`linear-gradient(to right, var(--navy) ${(draftScores[index] - 4) / 36 * 100}%, #e3e9ef ${(draftScores[index] - 4) / 36 * 100}%)`}}/><button type="button" aria-label={`Øk ${area.label} med 0,25`} disabled={draftScores[index] >= 40} onClick={() => updateScore(index, draftScores[index] + 1)}>+</button></div><div className="demo-range-scale"><span>1,00</span><span>10,00</span></div></div>
+          <label className="demo-comment-field"><span className="demo-comment-label"><strong>Kommentar</strong><span>Valgfritt</span></span><textarea rows={2} value={comments[index]} onChange={(event) => setComments((current) => current.map((value, position) => position === index ? event.target.value : value))} placeholder="Skriv en kort observasjon" /></label>
+        </section>)}</div><aside className="demo-summary-card"><p className="eyebrow">Oppsummering</p><h2>Din prøvevurdering</h2><div className="demo-summary-score">{formatScore(draftTotal)}<span> / 10</span></div><p className="muted small">Gjennomsnittet av de fire områdene.</p><div className="demo-summary-list">{areas.map((area, index) => <div key={area.key}><span>{area.label}</span><strong>{formatScore(draftScores[index] / 4)}</strong></div>)}</div><button className="button demo-reset-button" onClick={() => { setDraftScores([32, 30, 28, 29]); setComments(["God orden og tydelig merking.", "", "", "Varemottaket bør følges opp."]); }}><RotateCcw size={15}/> Start på nytt</button><p className="muted small demo-save-note">Prøven lagres ikke. Ingen data blir publisert.</p></aside></div>
+      </>}
     </main>
-    <nav className="mobile-nav" aria-label="Prøvedemo mobil">{nav.map((item) => <button key={item.id} className={view === item.id ? "selected" : ""} onClick={() => switchView(item.id)}><span aria-hidden="true">{item.icon}</span>{item.label}</button>)}</nav>
+    <nav className="mobile-nav" aria-label="Prøvedemo mobil">{nav.map((item) => <button key={item.id} className={view === item.id ? "selected" : ""} onClick={() => switchView(item.id)}><item.icon size={17} strokeWidth={1.8} aria-hidden="true"/>{item.label}</button>)}</nav>
   </div>;
 }
