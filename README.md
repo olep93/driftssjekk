@@ -16,7 +16,7 @@ Karakterveiledning må vedtas av oppdragsgiver før reell bruk. Inntil da betyr 
 ## Lokal oppstart
 
 1. Bruk Node 20 eller nyere og pnpm. Kjør `pnpm install`.
-2. Opprett et **eget utviklingsprosjekt** i Supabase, helst i europeisk region. Kopier `.env.example` til `.env.local` og fyll inn URL, publishable key og service role key. Service role key skal aldri eksponeres i klientkode eller commits.
+2. Opprett et **eget utviklingsprosjekt** i Supabase, helst i europeisk region. Kopier `.env.example` til `.env.local` og fyll inn URL, publishable key og secret key. Secret key skal aldri eksponeres i klientkode eller commits.
 3. Kjør SQL-filene i `supabase/migrations/` i nummerrekkefølge mot prosjektet, for eksempel med Supabase CLI `supabase db push` etter at prosjektet er koblet til. Migrasjonene oppretter også private Storage-buckets.
 4. Slå av åpen registrering i Supabase Auth. Sett opp e-post/passord, SMTP for invitasjoner og passordgjenoppretting, og tillatte redirect-URL-er for `/auth/callback`.
 5. Opprett første administrator kontrollert: legg først inn samvirkelaget i SQL Editor med `insert into public.cooperatives(name) values ('Samvirkelagets navn') returning id;`. Opprett deretter brukeren i Supabase Auth, finn UUID-en, og kjør følgende i SQL Editor. Erstatt plassholderne med faktiske verdier:
