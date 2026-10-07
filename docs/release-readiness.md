@@ -6,7 +6,7 @@ Oppdatert 7. oktober 2026. Løsningen på `driftssjekk.vercel.app` er en prøvba
 
 - Oversikt, konseptsjekkrunder, varehus, rapporter, kriterier, oppfølging og administrasjon kan utforskes med demodata.
 - Den åpne prøvevurderingen viser karakterberegning uten å lagre endringer.
-- Innlogging, publisering, tilgangstester mot demodatabasen og nedlasting av rapport-PDF er verifisert i demomiljøet. PowerPoint-eksporten er implementert og kontrollert som fil, men må også prøves med innlogget bruker på Vercel.
+- Innlogging, publisering og tilgangstester er verifisert i demomiljøet. Både PDF og PowerPoint er lastet ned fra Vercel med en innlogget testkonto og kontrollert som åpnebare filer.
 - Testkontoen `ole.kristiansen@coop.no` er knyttet til Tønsberg og har administrasjons- og driftsrolle i begge nåværende testsamvirkelag. En testkladd og en publisert fiktiv rapport uten rundetilknytning er opprettet.
 - Typografi, felter og prøvevurdering er kontrollert på PC og smal mobilvisning.
 
