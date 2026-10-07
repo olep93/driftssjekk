@@ -1,6 +1,6 @@
 # Driftssjekk
 
-Intern webapp for driftssjekker og egenkontroller i varehus. Grensesnittet er på norsk bokmål. Koden bruker Next.js 16, Supabase Auth/Postgres/Storage og en privat jobbkjø for PDF og e-post. Prosjektet er et utviklingsgrunnlag og er **ikke satt i produksjon**.
+Intern webapp for driftssjekker og egenkontroller i varehus. Grensesnittet er på norsk bokmål. Koden bruker Next.js 16, Supabase Auth/Postgres/Storage og en privat jobbkjø for PDF og e-post. Prosjektet er et utviklingsgrunnlag og er **ikke satt i produksjon**. Den separate prøvevisningen på `/demo` bruker fiktive data og lagrer ikke endringer.
 
 ## Kort om løsningen
 
