@@ -1,9 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { CalendarRange, ClipboardCheck, FileText, LayoutDashboard, RotateCcw } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { areas, formatScore, totalFromQuarters } from "@/lib/scoring";
+import { DemoAreaPhotos, type DemoPhoto } from "./demo-area-photos";
 
 type Report = { store: string; scores: [number, number, number, number]; date: string; comment: string };
 type Round = { name: string; period: string; status: string; reports: Report[] };
@@ -47,6 +48,9 @@ export function DemoClient() {
   const [selectedStore, setSelectedStore] = useState<string | null>(null);
   const [draftScores, setDraftScores] = useState<[number, number, number, number]>([32, 30, 28, 29]);
   const [comments, setComments] = useState(["God orden og tydelig merking.", "", "", "Varemottaket bør følges opp."]);
+  const [photosByArea, setPhotosByArea] = useState<DemoPhoto[][]>(() => areas.map(() => []));
+  const [photoErrors, setPhotoErrors] = useState<string[]>(() => areas.map(() => ""));
+  const photoUrls = useRef(new Set<string>());
   const round = rounds[roundIndex];
   const sorted = useMemo(() => [...round.reports].sort((a, b) => total(b) - total(a)), [round]);
   const activeReport = selectedStore ? round.reports.find((report) => report.store === selectedStore) : null;
@@ -56,6 +60,43 @@ export function DemoClient() {
   function updateScore(index: number, next: number) {
     if (!Number.isInteger(next) || next < 4 || next > 40) return;
     setDraftScores((current) => current.map((value, position) => position === index ? next : value) as [number, number, number, number]);
+  }
+  useEffect(() => {
+    const urls = photoUrls.current;
+    return () => { urls.forEach((url) => URL.revokeObjectURL(url)); urls.clear(); };
+  }, []);
+  function addPhotos(index: number, selected: FileList | null) {
+    if (!selected?.length) return;
+    const files = Array.from(selected);
+    const valid = files.filter((file) => ["image/jpeg", "image/png", "image/webp"].includes(file.type) && file.size > 0 && file.size <= 10_485_760);
+    const available = Math.max(0, 20 - photosByArea[index].length);
+    const added = valid.slice(0, available).map((file) => {
+      const url = URL.createObjectURL(file);
+      photoUrls.current.add(url);
+      return { id: crypto.randomUUID(), name: file.name, url, caption: "" };
+    });
+    setPhotosByArea((current) => current.map((photos, position) => position === index ? [...photos, ...added] : photos));
+    const messages: string[] = [];
+    if (valid.length !== files.length) messages.push("Noen filer ble hoppet over. Bruk JPEG, PNG eller WebP på maks 10 MB per bilde.");
+    if (valid.length > available) messages.push("Maksimalt 20 bilder per område.");
+    setPhotoErrors((current) => current.map((message, position) => position === index ? messages.join(" ") : message));
+  }
+  function updatePhotoCaption(index: number, id: string, caption: string) {
+    setPhotosByArea((current) => current.map((photos, position) => position === index ? photos.map((photo) => photo.id === id ? { ...photo, caption } : photo) : photos));
+  }
+  function removePhoto(index: number, id: string) {
+    const photo = photosByArea[index].find((item) => item.id === id);
+    if (photo) { URL.revokeObjectURL(photo.url); photoUrls.current.delete(photo.url); }
+    setPhotosByArea((current) => current.map((photos, position) => position === index ? photos.filter((item) => item.id !== id) : photos));
+    setPhotoErrors((current) => current.map((message, position) => position === index ? "" : message));
+  }
+  function resetDemo() {
+    photoUrls.current.forEach((url) => URL.revokeObjectURL(url));
+    photoUrls.current.clear();
+    setPhotosByArea(areas.map(() => []));
+    setPhotoErrors(areas.map(() => ""));
+    setDraftScores([32, 30, 28, 29]);
+    setComments(["God orden og tydelig merking.", "", "", "Varemottaket bør følges opp."]);
   }
   function switchView(next: View) { setView(next); setSelectedStore(null); }
 
@@ -96,7 +137,8 @@ export function DemoClient() {
           <div className="demo-assessment-head"><div className="demo-assessment-title"><span className="demo-area-number">{String(index + 1).padStart(2, "0")}</span><div><span className="demo-overline">Område {index + 1} av 4</span><h2>{area.label}</h2></div></div><div className="demo-assessment-score"><span>Karakter</span><output htmlFor={`demo-score-${index}`}>{formatScore(draftScores[index] / 4)}<small> / 10</small></output></div></div>
           <div className="demo-range-field"><div className="demo-range-label"><label htmlFor={`demo-score-${index}`}>Vurdering</label><span>Steg på 0,25</span></div><div className="demo-range-control"><button type="button" aria-label={`Senk ${area.label} med 0,25`} disabled={draftScores[index] <= 4} onClick={() => updateScore(index, draftScores[index] - 1)}>−</button><input id={`demo-score-${index}`} type="range" min={4} max={40} step={1} value={draftScores[index]} onChange={(event) => updateScore(index, Number(event.target.value))} aria-valuetext={`${formatScore(draftScores[index] / 4)} av 10`} style={{background:`linear-gradient(to right, var(--navy) ${(draftScores[index] - 4) / 36 * 100}%, #e3e9ef ${(draftScores[index] - 4) / 36 * 100}%)`}}/><button type="button" aria-label={`Øk ${area.label} med 0,25`} disabled={draftScores[index] >= 40} onClick={() => updateScore(index, draftScores[index] + 1)}>+</button></div><div className="demo-range-scale"><span>1,00</span><span>10,00</span></div></div>
           <label className="demo-comment-field"><span className="demo-comment-label"><strong>Kommentar</strong><span>Valgfritt</span></span><textarea rows={2} value={comments[index]} onChange={(event) => setComments((current) => current.map((value, position) => position === index ? event.target.value : value))} placeholder="Skriv en kort observasjon" /></label>
-        </section>)}</div><aside className="demo-summary-card"><p className="eyebrow">Oppsummering</p><h2>Din prøvevurdering</h2><div className="demo-summary-score">{formatScore(draftTotal)}<span> / 10</span></div><p className="muted small">Gjennomsnittet av de fire områdene.</p><div className="demo-summary-list">{areas.map((area, index) => <div key={area.key}><span>{area.label}</span><strong>{formatScore(draftScores[index] / 4)}</strong></div>)}</div><button className="button demo-reset-button" onClick={() => { setDraftScores([32, 30, 28, 29]); setComments(["God orden og tydelig merking.", "", "", "Varemottaket bør følges opp."]); }}><RotateCcw size={15}/> Start på nytt</button><p className="muted small demo-save-note">Prøven lagres ikke. Ingen data blir publisert.</p></aside></div>
+          <DemoAreaPhotos areaLabel={area.label} photos={photosByArea[index]} error={photoErrors[index]} onAdd={(files) => addPhotos(index, files)} onCaptionChange={(id, caption) => updatePhotoCaption(index, id, caption)} onRemove={(id) => removePhoto(index, id)} />
+        </section>)}</div><aside className="demo-summary-card"><p className="eyebrow">Oppsummering</p><h2>Din prøvevurdering</h2><div className="demo-summary-score">{formatScore(draftTotal)}<span> / 10</span></div><p className="muted small">Gjennomsnittet av de fire områdene.</p><div className="demo-summary-list">{areas.map((area, index) => <div key={area.key}><span>{area.label}</span><strong>{formatScore(draftScores[index] / 4)}</strong></div>)}</div><button className="button demo-reset-button" onClick={resetDemo}><RotateCcw size={15}/> Start på nytt</button><p className="muted small demo-save-note">Prøven lagres ikke. Ingen data blir publisert.</p></aside></div>
       </>}
     </main>
     <nav className="mobile-nav" aria-label="Prøvedemo mobil">{nav.map((item) => <button key={item.id} className={view === item.id ? "selected" : ""} onClick={() => switchView(item.id)}><item.icon size={17} strokeWidth={1.8} aria-hidden="true"/>{item.label}</button>)}</nav>
