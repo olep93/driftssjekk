@@ -1,16 +1,18 @@
 import { createClient } from "@supabase/supabase-js";
+import { assertDemoTarget } from "./demo-target.mjs";
 
 const url=process.env.NEXT_PUBLIC_SUPABASE_URL;
 const key=process.env.SUPABASE_SERVICE_ROLE_KEY;
 const password=process.env.DEMO_PASSWORD;
 if(!url||!key||!password)throw new Error("Sett NEXT_PUBLIC_SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY og DEMO_PASSWORD.");
-if(!["localhost","127.0.0.1"].includes(new URL(url).hostname))throw new Error("Demodata kan bare legges inn i lokal Supabase.");
+assertDemoTarget(url);
 if(password.length<12)throw new Error("DEMO_PASSWORD må ha minst 12 tegn.");
 const db=createClient(url,key,{auth:{autoRefreshToken:false,persistSession:false}});
 async function insert(table,value){const {data,error}=await db.from(table).insert(value).select().single();if(error)throw new Error(`${table}: ${error.message}`);return data;}
 async function user(email,name){const {data,error}=await db.auth.admin.createUser({email,password,email_confirm:true,user_metadata:{display_name:name}});if(error||!data.user)throw new Error(error?.message||"Kunne ikke opprette demobruker");await insert("profiles",{id:data.user.id,display_name:name});return data.user.id;}
-const existing=await db.from("cooperatives").select("id").eq("name","Coop Sørøst").maybeSingle();
-if(existing.data)throw new Error("Demodata finnes allerede. Bruk en ny lokal database for å kjøre seed på nytt.");
+const existing=await db.from("cooperatives").select("id").limit(1);
+if(existing.error)throw existing.error;
+if(existing.data?.length)throw new Error("Databasen er ikke tom. Demodata legges bare inn i et nytt prosjekt.");
 const southeast=await insert("cooperatives",{name:"Coop Sørøst"});
 const other=await insert("cooperatives",{name:"Fiktivt samvirkelag Nord"});
 const names=["Tønsberg","Mjøndalen","Skien","Sandefjord","Kongsberg"];
@@ -67,4 +69,4 @@ await version(draft,1,"2027-05-20",[32,null,null,null],"Ufullstendig fiktiv klad
 const self=await insert("reports",{cooperative_id:southeast.id,store_id:stores.Tønsberg.id,round_id:null,kind:"self_check",created_by:manager});
 await version(self,1,"2027-05-22",[36,35,33,32],"Fiktiv egenkontroll.");
 await insert("rounds",{cooperative_id:other.id,title:"Fiktiv nordrunde",sequence_no:1,status:"planned",created_by:otherOps});
-console.log("Fiktive demodata er opprettet i lokal Supabase. Kontoer bruker e-postadresser under demo.invalid.");
+console.log("Fiktive demodata er opprettet. Kontoer bruker e-postadresser under demo.invalid.");

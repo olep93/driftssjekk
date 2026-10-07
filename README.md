@@ -34,14 +34,14 @@ Karakterveiledning må vedtas av oppdragsgiver før reell bruk. Inntil da betyr 
 
 ## Fiktive demodata og tilgangstest
 
-Etter migrering kan demodata legges inn **kun mot lokal Supabase**. Skriptet avviser andre verter. Sett `DEMO_PASSWORD` til et midlertidig passord på minst 12 tegn og kjør:
+Etter migrering kan fiktive demodata legges inn mot lokal Supabase. For et eget eksternt demoprosjekt kreves både eksakt prosjekt-ID i `DEMO_REMOTE_PROJECT_REF` og `DEMO_REMOTE_CONFIRM=driftssjekk-demo:<prosjekt-ID>`. Skriptet avviser andre verter og databaser som allerede inneholder samvirkelag. Sett `DEMO_PASSWORD` til et midlertidig passord på minst 12 tegn og kjør:
 
 ```bash
 node --env-file=.env.local scripts/seed-demo.mjs
 node --env-file=.env.local scripts/check-rls.mjs
 ```
 
-Skriptene oppretter fiktive vurderinger for Coop Sørøst og Tønsberg, Mjøndalen, Skien, Sandefjord og Kongsberg, tre runder, en korrigering, en kladd, en ufullstendig runde, et arkivert demovarehus og et ekstra fiktivt samvirkelag. Demobrukere har adresser under `demo.invalid`. Ikke bruk disse dataene som faktiske vurderinger. `check-rls.mjs` prøver direkte lesing/skriving, skjult kladd i Storage og tilgang etter rolletilbaketrekking. Denne testen krever en lokal Supabase-instans og er ikke kjørt i dette arbeidsmiljøet.
+Skriptene oppretter fiktive vurderinger for Coop Sørøst og Tønsberg, Mjøndalen, Skien, Sandefjord og Kongsberg, tre runder, en korrigering, en kladd, en ufullstendig runde, et arkivert demovarehus og et ekstra fiktivt samvirkelag. Demobrukere har adresser under `demo.invalid`. Ikke bruk disse dataene som faktiske vurderinger. `check-rls.mjs` prøver direkte lesing/skriving, skjult kladd i Storage og tilgang etter rolletilbaketrekking. Denne testen er ikke kjørt mot et ekte Supabase-prosjekt ennå.
 
 ## Jobbkø, PDF og varsler
 

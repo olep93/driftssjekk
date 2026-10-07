@@ -1,13 +1,14 @@
 import assert from "node:assert/strict";
 import { randomUUID } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
+import { assertDemoTarget } from "./demo-target.mjs";
 
 const url=process.env.NEXT_PUBLIC_SUPABASE_URL;
 const publishable=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 const service=process.env.SUPABASE_SERVICE_ROLE_KEY;
 const password=process.env.DEMO_PASSWORD;
 if(!url||!publishable||!service||!password)throw new Error("Lokale Supabase- og demo-variabler mangler.");
-if(!["localhost","127.0.0.1"].includes(new URL(url).hostname))throw new Error("Tilgangstestene kan bare kjøres mot lokal Supabase.");
+assertDemoTarget(url);
 const admin=createClient(url,service,{auth:{persistSession:false}});
 async function signIn(email){const client=createClient(url,publishable,{auth:{persistSession:false}});const {error}=await client.auth.signInWithPassword({email,password});if(error)throw error;return client;}
 const [ops,manager,other]=await Promise.all([
