@@ -4,7 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import { assertDemoTarget } from "./demo-target.mjs";
 
 const url=process.env.NEXT_PUBLIC_SUPABASE_URL;
-const publishable=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+const publishable=process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY||process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const service=process.env.SUPABASE_SECRET_KEY||process.env.SUPABASE_SERVICE_ROLE_KEY;
 const password=process.env.DEMO_PASSWORD;
 if(!url||!publishable||!service||!password)throw new Error("Lokale Supabase- og demo-variabler mangler.");

@@ -7,10 +7,11 @@ export async function updateSession(request: NextRequest) {
     if (origin && origin !== request.nextUrl.origin) return NextResponse.json({error:"Ugyldig forespørsel"},{status:403});
   }
   let response = NextResponse.next({ request });
-  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY) return response;
+  const publicKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !publicKey) return response;
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL,
-    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+    publicKey,
     {
       cookies: {
         getAll() { return request.cookies.getAll(); },
