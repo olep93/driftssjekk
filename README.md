@@ -1,6 +1,6 @@
 # Driftssjekk
 
-Intern webapp for uanmeldte konseptsjekker og månedlige driftsgjennomganger i varehus. Grensesnittet er på norsk bokmål. Koden bruker Next.js 16, Supabase Auth/Postgres/Storage og en privat jobbkjø for PDF og e-post. En fiktiv demo er tilgjengelig på [driftssjekk.vercel.app](https://driftssjekk.vercel.app). Dette er **ikke produksjonsbruk**. Den separate prøvevisningen på `/demo` bruker fiktive data og lagrer ikke endringer. Se [status før pilot og lansering](docs/release-readiness.md).
+Intern webapp for uanmeldte konseptsjekker og månedlige driftsgjennomganger i varehus. Grensesnittet er på norsk bokmål. Koden bruker Next.js 16, Supabase Auth/Postgres/Storage og en privat jobbkjø for PDF og e-post. Den fiktive testløsningen på [driftssjekk.vercel.app](https://driftssjekk.vercel.app) krever innlogging. Dette er **ikke produksjonsbruk**. Tidligere lenker til `/demo` sender besøkende til innlogging eller oversikten. Se [status før pilot og lansering](docs/release-readiness.md).
 
 ## Kort om løsningen
 

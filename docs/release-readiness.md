@@ -1,11 +1,11 @@
 # Status før pilot og lansering
 
-Oppdatert 7. oktober 2026. Løsningen på `driftssjekk.vercel.app` er en prøvbar demo med fiktive vurderinger. Den separate `/demo`-visningen lagrer ingenting. Den innloggede demoen har database, roller og rapportflyt, men er ikke satt opp for ordinær drift.
+Oppdatert 8. oktober 2026. Løsningen på `driftssjekk.vercel.app` er en innloggingsbeskyttet test med fiktive vurderinger. Den innloggede testen har database, roller og rapportflyt, men er ikke satt opp for ordinær drift. Tidligere `/demo`-lenker sender besøkende til innlogging eller oversikten.
 
 ## Kan prøves nå
 
 - Oversikt, konseptsjekkrunder, varehus, rapporter, kriterier, oppfølging og administrasjon kan utforskes med demodata.
-- Den åpne prøvevurderingen viser karakterberegning uten å lagre endringer.
+- Inviterte brukere kan opprette og lagre en testvurdering i et varehus de har tilgang til.
 - Innlogging, publisering og tilgangstester er verifisert i demomiljøet. Både PDF og PowerPoint er lastet ned fra Vercel med en innlogget testkonto og kontrollert som åpnebare filer.
 - Testkontoen `ole.kristiansen@coop.no` er knyttet til Tønsberg og har administrasjons- og driftsrolle i begge nåværende testsamvirkelag. En testkladd og en publisert fiktiv rapport uten rundetilknytning er opprettet.
 - Typografi, felter og prøvevurdering er kontrollert på PC og smal mobilvisning.
