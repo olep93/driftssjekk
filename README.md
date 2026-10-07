@@ -1,17 +1,17 @@
 # Driftssjekk
 
-Intern webapp for driftssjekker og egenkontroller i varehus. Grensesnittet er på norsk bokmål. Koden bruker Next.js 16, Supabase Auth/Postgres/Storage og en privat jobbkjø for PDF og e-post. En fiktiv demo er tilgjengelig på [driftssjekk.vercel.app](https://driftssjekk.vercel.app). Dette er **ikke produksjonsbruk**. Den separate prøvevisningen på `/demo` bruker fiktive data og lagrer ikke endringer. Se [status før pilot og lansering](docs/release-readiness.md).
+Intern webapp for uanmeldte konseptsjekker og månedlige driftsgjennomganger i varehus. Grensesnittet er på norsk bokmål. Koden bruker Next.js 16, Supabase Auth/Postgres/Storage og en privat jobbkjø for PDF og e-post. En fiktiv demo er tilgjengelig på [driftssjekk.vercel.app](https://driftssjekk.vercel.app). Dette er **ikke produksjonsbruk**. Den separate prøvevisningen på `/demo` bruker fiktive data og lagrer ikke endringer. Se [status før pilot og lansering](docs/release-readiness.md).
 
 ## Kort om løsningen
 
 - Fire områder: Drive-In, Butikk, Uteområde og Varemottak. Hvert område får 1,00–10,00 i kvartsteg. Totalen er summen av `score_quarters` delt på 16. Bare visningen avrundes.
-- Driftssjekker og egenkontroller er separate. Kun gjeldende publiserte driftssjekk i en runde inngår i rangering.
+- Uanmeldte konseptsjekker får karakter. Månedlig driftsgjennomgang lagrer observasjoner og bilder uten konseptkarakter. Bare publiserte konseptsjekker i en runde inngår i rangering.
 - Roller er eksplisitte per samvirkelag eller varehus. E-postdomene gir ingen tilgang. Publiserte versjoner og øyeblikksbilder er uforanderlige.
 - Databasen håndhever rettigheter og sentrale overganger via RLS og `SECURITY DEFINER`-funksjoner. Frontend og API er ikke eneste tilgangssperre.
 - Bilder lagres i privat Storage. Nettleseren reduserer bildestørrelse og koder om til JPEG før direkte opplasting. Dette fjerner vanlig EXIF fra lagret visningsfil. HEIC/HEIF støttes ikke i første versjon.
-- PDF og e-post legges i jobbkø ved publisering. Selve publiseringen er ikke avhengig av jobbene.
+- PDF og e-post legges i jobbkø ved publisering. Autoriserte lesere kan også lage PowerPoint fra en publisert rapport.
 
-Karakterveiledning må vedtas av oppdragsgiver før reell bruk. Inntil da betyr høyere karakter bedre drift, uten oppdiktede terskler. Fargene i appen er foreløpige; ingen offisiell logo er brukt.
+Vurderingskriteriene er transkribert fra originalmalen som ble levert 7. oktober 2026. Karakter 6 er konsept, under 6 er under konsept, og over 6 er over konsept. Kriteriene finnes på egen side og som vedlegg i konseptsjekkrapporter. Tekstene bør kvalitetssikres mot originaldokumentet før reell bruk. Ingen offisiell logo er brukt.
 
 ## Lokal oppstart
 
@@ -47,7 +47,7 @@ Skriptene oppretter fiktive vurderinger for Coop Sørøst og Tønsberg, Mjøndal
 
 `/api/jobs/run` krever `Authorization: Bearer <CRON_SECRET>`. `vercel.json` kjører jobben hvert tiende minutt i produksjon. [Vercel Hobby tillater bare daglig cron](https://vercel.com/docs/cron-jobs/usage-and-pricing); denne frekvensen krever Pro eller en annen sikker jobbkjører. Vercel cron kjører ikke automatisk for preview.
 
-Jobben lager PDF fra `publication_snapshots` og lagrer den i privat `report-exports`. Autoriserte brukere får en signert lenke som varer i fem minutter. PDF som allerede er lastet ned kan ikke tilbakekalles. Varsler sendes med Resend hvis `RESEND_API_KEY` og `NOTIFICATION_FROM` er satt. Oppsett av Auth-e-post gjøres separat i Supabase SMTP. Varseltekst inneholder bare varehus, eventuell runde og innloggingslenke. [Resends idempotensnøkkel varer i 24 timer](https://resend.com/changelog/idempotency-keys); automatisk gjentakelse av varsler begrenses derfor til 23 timer etter opprettelse. Eldre feil må gjennomgås manuelt for å unngå mulig dobbeltutsending.
+Jobben lager PDF fra `publication_snapshots` og lagrer den i privat `report-exports`. PowerPoint kan lages ved behov fra samme publiserte øyeblikksbilde og lagres i den samme private bøtten. Autoriserte brukere får en signert lenke som varer i fem minutter. PDF som allerede er lastet ned kan ikke tilbakekalles. Varsler sendes med Resend hvis `RESEND_API_KEY` og `NOTIFICATION_FROM` er satt. Oppsett av Auth-e-post gjøres separat i Supabase SMTP. Varseltekst inneholder bare varehus, eventuell runde og innloggingslenke. [Resends idempotensnøkkel varer i 24 timer](https://resend.com/changelog/idempotency-keys); automatisk gjentakelse av varsler begrenses derfor til 23 timer etter opprettelse. Eldre feil må gjennomgås manuelt for å unngå mulig dobbeltutsending.
 
 ## Verifisering
 
@@ -58,7 +58,7 @@ pnpm test
 pnpm build
 ```
 
-SQL-migrasjonene kan syntakssjekkes med PostgreSQL-parser, men må også kjøres mot en ekte Supabase-instans. PDF-testen dekker flersidig A4, lange kommentarer og norske tegn. Bruk `PDF_VISUAL_QA=1 pnpm test` for å skrive en midlertidig QA-PDF under `tmp/pdfs/`; den er ikke et publisert rapportarkiv.
+SQL-migrasjonene kan syntakssjekkes med PostgreSQL-parser, men må også kjøres mot en ekte Supabase-instans. PDF-testen dekker flersidig A4, lange kommentarer, norske tegn og månedlig rapport uten karakter. PowerPoint-testen kontrollerer en åpnebar presentasjon med kriterier. Bruk `PDF_VISUAL_QA=1 pnpm test` for å skrive en midlertidig QA-PDF under `tmp/pdfs/`; den er ikke et publisert rapportarkiv.
 
 Sist kontrollert 7. oktober 2026: typekontroll, lint og produksjonsbygg besto. Migrasjoner er kjørt i et eget Supabase-demoprosjekt med fiktive data, og RLS-tilgangstestene er kjørt der. Innlogging og rapport-PDF er prøvd mot Vercel-demoen. Dette bekrefter demomiljøet, ikke et ferdig produksjonsoppsett.
 

@@ -4,9 +4,10 @@ Oppdatert 7. oktober 2026. Løsningen på `driftssjekk.vercel.app` er en prøvba
 
 ## Kan prøves nå
 
-- Oversikt, runder, varehus, rapporter, oppfølging og administrasjon kan utforskes med demodata.
+- Oversikt, konseptsjekkrunder, varehus, rapporter, kriterier, oppfølging og administrasjon kan utforskes med demodata.
 - Den åpne prøvevurderingen viser karakterberegning uten å lagre endringer.
-- Innlogging, publisering, tilgangstester mot demodatabasen og nedlasting av rapport-PDF er verifisert i demomiljøet.
+- Innlogging, publisering, tilgangstester mot demodatabasen og nedlasting av rapport-PDF er verifisert i demomiljøet. PowerPoint-eksporten er implementert og kontrollert som fil, men må også prøves med innlogget bruker på Vercel.
+- Testkontoen `ole.kristiansen@coop.no` er knyttet til Tønsberg og har administrasjons- og driftsrolle i begge nåværende testsamvirkelag. En testkladd og en publisert fiktiv rapport uten rundetilknytning er opprettet.
 - Typografi, felter og prøvevurdering er kontrollert på PC og smal mobilvisning.
 
 ## Før en pilot med faktiske Coop-brukere
@@ -19,7 +20,7 @@ Oppdatert 7. oktober 2026. Løsningen på `driftssjekk.vercel.app` er en prøvba
 
 ## Før ordinær lansering
 
-- Vedta karakterveiledning, tekst, visuell profil og eventuelle offisielle merkevareelementer. Dagens farger og merking er foreløpige.
+- Kvalitetssikre transkripsjonen av originalkriteriene og avklare månedlige driftskriterier, visuell profil og eventuelle offisielle merkevareelementer.
 - Avklar databehandleravtaler, europeisk datalagring, oppbevaring/sletting og kostnadsplan. Sett opp backup av både database og Storage, og gjennomfør en gjenopprettingstest.
 - Verifiser bakgrunnsjobber og varselutsending på valgt Vercel-plan. `vercel.json` ber om jobb hvert tiende minutt; dette må passe plan og driftsoppsett. Kontroller feilhåndtering og varsler ved jobbfeil.
 - Gjennomfør brukerakseptanse, tilgjengelighetskontroll, ytelsestest med faktisk datamengde og sikkerhetsgjennomgang av roller, RLS, API og private filer.

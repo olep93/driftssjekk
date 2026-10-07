@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { buildReportPdf } from "@/lib/pdf";
+import { buildReportPdf, reportPdfPath } from "@/lib/pdf";
 
 export const runtime="nodejs";
 export const maxDuration=60;
@@ -17,7 +17,7 @@ export async function GET(request:Request){
       const {data:row,error}=await admin.from("publication_snapshots").select("content").eq("version_id",job.version_id).single();
       if(error||!row)throw new Error("Publiseringsgrunnlag mangler");
       const pdf=await buildReportPdf(row.content,admin);
-      const path=`reports/${job.version_id}.pdf`;
+      const path=reportPdfPath(job.version_id);
       const {error:uploadError}=await admin.storage.from("report-exports").upload(path,Buffer.from(pdf),{contentType:"application/pdf",upsert:false});
       if(uploadError && !/already exists|duplicate/i.test(uploadError.message))throw uploadError;
       await admin.from("exports").update({status:"ready",object_path:path,error:null,updated_at:new Date().toISOString()}).eq("id",job.id);

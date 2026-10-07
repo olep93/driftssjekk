@@ -1,10 +1,14 @@
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { areas, formatDate, formatScore } from "./scoring";
+import { conceptBand, conceptLabel, criteriaSections } from "./criteria";
 
-type Snapshot = { kind:string;store_name:string;cooperative_name:string;round_title:string|null;visit_date:string;assessor_name:string;summary:string;total:number;version_no:number;areas:{key:string;score_quarters:number;comment:string;needs_follow_up:boolean;images:{path:string;caption:string}[]}[] };
-const navy=rgb(.07,.15,.25),orange=rgb(.91,.46,.15),muted=rgb(.39,.45,.52),line=rgb(.86,.89,.91);
-function printable(value:string){return value.replace(/[^\u0020-\u00ff\n]/g,"?");}
+type Snapshot = { kind:string;store_name:string;cooperative_name:string;round_title:string|null;visit_date:string;assessor_name:string;summary:string;total:number|null;version_no:number;areas:{key:string;score_quarters:number|null;comment:string;needs_follow_up:boolean;images:{path:string;caption:string}[]}[] };
+const navy=rgb(.07,.15,.25),orange=rgb(.91,.46,.15),muted=rgb(.39,.45,.52),line=rgb(.86,.89,.91),red=rgb(.64,.26,.24),green=rgb(.13,.42,.31);
+export const reportPdfTemplateVersion = "criteria-20261007";
+export function reportPdfPath(versionId:string){return `reports/${versionId}-${reportPdfTemplateVersion}.pdf`;}
+function printable(value:string){return value.replace(/[–—−]/g,"-").replace(/[“”]/g,'"').replace(/[’]/g,"'").replace(/[^\u0020-\u00ff\n]/g,"?");}
+function conceptColor(value:number|null){const band=conceptBand(value);return band==="below"?red:band==="above"?green:navy;}
 function splitLines(text:string,font:PDFFont,size:number,maxWidth:number){
   const lines:string[]=[];
   for(const paragraph of printable(text).split("\n")){
@@ -34,12 +38,13 @@ export async function buildReportPdf(snapshot:Snapshot,supabase:SupabaseClient):
     for(const lineText of splitLines(value,font,size,contentWidth)){room(space);if(lineText)page.drawText(lineText,{x:margin,y,size,font,color});y-=space;}
   }
   page.drawRectangle({x:0,y:height-10,width,height:10,color:navy});
-  text(snapshot.kind==="inspection"?"DRIFTSSJEKK":"EGENKONTROLL",10,bold,orange,21);
+  text(snapshot.kind==="inspection"?"UANMELDT KONSEPTSJEKK":"DRIFTSGJENNOMGANG",10,bold,orange,21);
   text(snapshot.store_name,24,bold,navy,32);
   text(snapshot.cooperative_name+(snapshot.round_title?`  ·  ${snapshot.round_title}`:""),10,regular,muted,19);
   room(65);page.drawRectangle({x:margin,y:y-56,width:contentWidth,height:61,color:rgb(.96,.97,.98)});
-  page.drawText("TOTALKARAKTER",{x:margin+15,y:y-15,size:9,font:bold,color:muted});
-  page.drawText(formatScore(snapshot.total),{x:margin+15,y:y-43,size:25,font:bold,color:navy});
+  page.drawText(snapshot.kind==="inspection"?"TOTALKARAKTER":"KONSEPTKARAKTER",{x:margin+15,y:y-15,size:9,font:bold,color:muted});
+  page.drawText(snapshot.kind==="inspection"?formatScore(snapshot.total):"Ikke gjeldende",{x:margin+15,y:y-43,size:snapshot.kind==="inspection"?25:18,font:bold,color:conceptColor(snapshot.total)});
+  if(snapshot.kind==="inspection")page.drawText(printable(conceptLabel(snapshot.total)),{x:margin+96,y:y-43,size:10,font:bold,color:conceptColor(snapshot.total)});
   page.drawText(`Besøk ${formatDate(snapshot.visit_date)}  ·  Versjon ${snapshot.version_no}`,{x:margin+190,y:y-36,size:10,font:regular,color:muted});y-=83;
   text(`Vurderer: ${snapshot.assessor_name||"Ukjent"}`,10,regular,muted,20);
   text("Oppsummering",14,bold,navy,23);
@@ -48,7 +53,8 @@ export async function buildReportPdf(snapshot:Snapshot,supabase:SupabaseClient):
     const a=snapshot.areas.find((item)=>item.key===area.key);if(!a)continue;
     room(55);page.drawLine({start:{x:margin,y},end:{x:width-margin,y},thickness:1,color:line});y-=24;
     page.drawText(area.label,{x:margin,y,size:15,font:bold,color:navy});
-    page.drawText(formatScore(a.score_quarters/4),{x:width-margin-46,y,size:15,font:bold,color:orange});y-=25;
+    const score=a.score_quarters==null?null:a.score_quarters/4;
+    page.drawText(snapshot.kind==="inspection"?formatScore(score):"Ikke gjeldende",{x:width-margin-(snapshot.kind==="inspection"?55:86),y,size:snapshot.kind==="inspection"?15:10,font:bold,color:conceptColor(score)});y-=25;
     if(a.needs_follow_up)text("Krever oppfølging",9,bold,orange,17);
     text(a.comment||"Ingen kommentar.",10,regular,navy,14);y-=8;
     for(const image of a.images){
@@ -63,6 +69,27 @@ export async function buildReportPdf(snapshot:Snapshot,supabase:SupabaseClient):
       }catch{ text("Bilde er tilgjengelig i nettversjonen.",9,regular,muted,15); }
     }
   }
-  const pages=pdf.getPages();pages.forEach((p,index)=>{p.drawLine({start:{x:margin,y:37},end:{x:width-margin,y:37},thickness:1,color:line});p.drawText(`Driftssjekk · ${printable(snapshot.store_name)}`,{x:margin,y:24,size:8,font:regular,color:muted});p.drawText(`${index+1} / ${pages.length}`,{x:width-margin-35,y:24,size:8,font:regular,color:muted});});
+  if(snapshot.kind==="inspection"){
+    newPage();
+    text("VURDERINGSKRITERIER",18,bold,navy,30);
+    text("Skala 1-10. Karakter 6 er konsept. Under 6 er under konsept; over 6 er over konsept.",10,regular,navy,17);
+    room(35);
+    page.drawText("UNDER 6 / UNDER KONSEPT",{x:margin,y,size:8,font:bold,color:red});
+    page.drawText("6 / KONSEPT",{x:margin+165,y,size:8,font:bold,color:navy});
+    page.drawText("OVER 6 / OVER KONSEPT",{x:margin+285,y,size:8,font:bold,color:green});
+    y-=29;
+    for(const section of criteriaSections){
+      room(48);
+      page.drawLine({start:{x:margin,y},end:{x:width-margin,y},thickness:1,color:line});y-=21;
+      page.drawText(printable(`Karakter ${section.grade}`),{x:margin,y,size:12,font:bold,color:navy});y-=20;
+      for(const point of section.points){
+        const wrapped=splitLines(point,regular,9,contentWidth-17);
+        wrapped.forEach((entry,index)=>{room(13);if(index===0)page.drawText("-",{x:margin+2,y,size:9,font:regular,color:navy});page.drawText(entry,{x:margin+17,y,size:9,font:regular,color:navy});y-=13;});
+        y-=3;
+      }
+      y-=8;
+    }
+  }
+  const pages=pdf.getPages();pages.forEach((p,index)=>{p.drawLine({start:{x:margin,y:37},end:{x:width-margin,y:37},thickness:1,color:line});p.drawText(`${snapshot.kind==="inspection"?"Konseptsjekk":"Driftsgjennomgang"} - ${printable(snapshot.store_name)}`,{x:margin,y:24,size:8,font:regular,color:muted});p.drawText(`${index+1} / ${pages.length}`,{x:width-margin-35,y:24,size:8,font:regular,color:muted});});
   return pdf.save();
 }

@@ -9,5 +9,5 @@ export default async function NewRound() {
     ctx.supabase.from("stores").select("id,name,cooperative_id").eq("active",true).order("name"),
     ctx.supabase.from("cooperatives").select("id,name").eq("active",true),
   ]);
-  return <><PageHeading eyebrow="Runder" title="Opprett runde" description="Velg hvilke varehus som skal inngå. Deltakerlisten lagres for historikken."/><section className="panel" style={{maxWidth:680}}><NewRoundForm stores={stores||[]} coops={(coops||[]).filter((c)=>isOperations(ctx.memberships,c.id))}/></section></>;
+  return <><PageHeading eyebrow="Uanmeldt konseptsjekk" title="Opprett konseptsjekkrunde" description="Velg hvilke varehus som skal inngå. Deltakerlisten lagres for historikken."/><section className="panel" style={{maxWidth:680}}><NewRoundForm stores={stores||[]} coops={(coops||[]).filter((c)=>isOperations(ctx.memberships,c.id))}/></section></>;
 }

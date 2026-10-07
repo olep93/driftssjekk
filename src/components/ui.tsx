@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { formatScore } from "@/lib/scoring";
+import { conceptBand, conceptLabel } from "@/lib/criteria";
 
 export function Score({ value }: { value: number | null | undefined }) {
-  return <span className={`score-pill ${value == null ? "" : value < 5 ? "low" : value < 7 ? "mid" : ""}`}>{formatScore(value)}</span>;
+  return <span className={`score-pill ${conceptBand(value)}`} title={conceptLabel(value)}>{formatScore(value)}</span>;
 }
 export function Status({ value }: { value: string }) {
   const labels: Record<string,string> = { planned:"Planlagt",active:"Pågår",closed:"Avsluttet",draft:"Kladd",published:"Publisert",open:"Åpent",in_progress:"Pågår",done:"Ferdig",withdrawn:"Trukket tilbake" };

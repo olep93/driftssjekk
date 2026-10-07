@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 import { apiClient, apiError } from "@/lib/api";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { buildReportPdf } from "@/lib/pdf";
+import { buildReportPdf, reportPdfPath } from "@/lib/pdf";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -16,15 +16,16 @@ export async function POST(_request: Request, { params }: { params: Promise<{ ve
   // This read is subject to RLS. Only a user who can read the published
   // version may request privileged PDF work for it.
   const { data: job, error: readError } = await auth.supabase.from("exports")
-    .select("id,status,attempts").eq("version_id", versionId).eq("kind", "report_pdf").maybeSingle();
+    .select("id,status,attempts,object_path").eq("version_id", versionId).eq("kind", "report_pdf").maybeSingle();
   if (readError || !job) return apiError("PDF finnes ikke", 404);
-  if (job.status === "ready") return NextResponse.json({ status: "ready" });
+  const path = reportPdfPath(versionId);
+  if (job.status === "ready" && job.object_path === path) return NextResponse.json({ status: "ready" });
   if (job.status === "processing") return NextResponse.json({ status: "processing" }, { status: 202 });
 
   const admin = createAdminClient();
   const { data: claimed, error: claimError } = await admin.from("exports")
     .update({ status: "processing", attempts: job.attempts + 1, error: null, updated_at: new Date().toISOString() })
-    .eq("id", job.id).in("status", ["pending", "failed"]).select("id").maybeSingle();
+    .eq("id", job.id).in("status", ["pending", "failed", "ready"]).select("id").maybeSingle();
   if (claimError) return apiError("Kunne ikke starte PDF-generering", 500);
   if (!claimed) return NextResponse.json({ status: "processing" }, { status: 202 });
 
@@ -33,7 +34,6 @@ export async function POST(_request: Request, { params }: { params: Promise<{ ve
       .select("content").eq("version_id", versionId).single();
     if (snapshotError || !snapshot) throw new Error("Publiseringsgrunnlag mangler");
     const pdf = await buildReportPdf(snapshot.content as Parameters<typeof buildReportPdf>[0], admin);
-    const path = `reports/${versionId}.pdf`;
     const { error: uploadError } = await admin.storage.from("report-exports")
       .upload(path, Buffer.from(pdf), { contentType: "application/pdf", upsert: false });
     if (uploadError && !/already exists|duplicate/i.test(uploadError.message)) throw uploadError;

@@ -13,4 +13,10 @@ describe("rapport-PDF",()=>{
     expect(pdf.getPageCount()).toBeGreaterThan(1);
     expect(pdf.getPage(0).getSize().width).toBeCloseTo(595.28,1);
   });
+  it("lager månedlig driftsgjennomgang uten konseptkarakter",async()=>{
+    const snapshot={kind:"self_check",store_name:"Tønsberg",cooperative_name:"Coop Sørøst",round_title:null,visit_date:"2026-10-07",assessor_name:"Testkonto",summary:"Månedlig oppsummering",total:null,version_no:1,areas:["drive_in","store","outdoor","goods_receiving"].map((key)=>({key,score_quarters:null,comment:"Observasjon",needs_follow_up:false,images:[]}))};
+    const bytes=await buildReportPdf(snapshot,{} as SupabaseClient);
+    const pdf=await PDFDocument.load(bytes);
+    expect(pdf.getPageCount()).toBe(1);
+  });
 });
