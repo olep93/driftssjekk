@@ -8,13 +8,14 @@ Oppdatert 8. oktober 2026. Løsningen på `driftssjekk.vercel.app` er en innlogg
 - Inviterte brukere kan opprette og lagre en testvurdering i et varehus de har tilgang til.
 - Innlogging, publisering og tilgangstester er verifisert i demomiljøet. Både PDF og PowerPoint er lastet ned fra Vercel med en innlogget testkonto og kontrollert som åpnebare filer.
 - Testkontoen `ole.kristiansen@coop.no` er knyttet til Tønsberg og har administrasjons- og driftsrolle i begge nåværende testsamvirkelag. En testkladd og en publisert fiktiv rapport uten rundetilknytning er opprettet.
+- Administrator kan opprette nye brukere med midlertidig passord og tildele rolle, samvirkelag og varehus. Passordet byttes ved første innlogging. `/onsker-tilgang` lager en e-postforespørsel som avsenderen selv må sende; forespørsler lagres foreløpig ikke i appen.
 - Typografi, felter og prøvevurdering er kontrollert på PC og smal mobilvisning.
 
 ## Før en pilot med faktiske Coop-brukere
 
 1. Avklar hvilke samvirkelag og varehus som skal være med. Excel-oversikten som er lagt i prosjektmappen inneholder 66 Obs BYGG-rader fordelt på 16 samvirkelag. Kontroller navn, identifikatorer og raden `X Obs Bygg Larvik` før import. Ikke bland virkelige varehus med fiktive vurderinger.
 2. Avklar og opprett brukere med eksplisitt rolle og tilgang. Appen har samvirkelagsadministrator, driftssjef og varehussjef; den har ingen egen global systemadministratorrolle. Nye samvirkelag gir ikke automatisk tilgang til eksisterende administratorer.
-3. Konfigurer produksjonsegnet SMTP i Supabase Auth og verifiser invitasjon og passordgjenoppretting. Dagens demoprosjekt sender ikke vanlige invitasjoner til vilkårlige adresser. Varsler ved publisering krever dessuten egen e-postleverandør og avsenderdomene.
+3. Konfigurer produksjonsegnet SMTP i Supabase Auth og verifiser invitasjon og passordgjenoppretting. Dagens midlertidige flyt lar administrator dele et selvvalgt passord direkte og bekrefter e-post uten egen verifisering. Den må erstattes eller sikres ytterligere før reell drift. Varsler ved publisering krever dessuten egen e-postleverandør og avsenderdomene.
 4. Skill pilotens Supabase-prosjekt og Vercel-miljø fra demodata. Gå gjennom redirect-URL-er, hemmeligheter, åpne registreringer og filtilgang før brukerne inviteres.
 5. Kjør en ende-til-ende-prøve med representative roller: opprett kladd, last opp bilder, publiser, les som varehussjef, korriger, last ned PDF og trekk tilbake tilgang. Test på faktiske iPhone- og Android-enheter og ved ustabilt nett.
 

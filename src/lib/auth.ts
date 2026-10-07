@@ -7,6 +7,8 @@ export async function getContext() {
   const { data: claims } = await supabase.auth.getClaims();
   const userId = claims?.claims?.sub;
   if (!userId) redirect("/login");
+  const { data: identity } = await supabase.auth.getUser();
+  if (identity.user?.app_metadata?.must_change_password) redirect("/nytt-passord");
   const [{ data: memberships }, { data: profile }] = await Promise.all([
     supabase.from("memberships").select("id,cooperative_id,store_id,role").eq("user_id", userId),
     supabase.from("profiles").select("display_name").eq("id", userId).maybeSingle(),

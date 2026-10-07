@@ -203,3 +203,11 @@ input::placeholder,textarea::placeholder{color:#8795a4;font-weight:400}
 .sidebar-bottom .logout-button{display:flex;align-items:center;gap:6px;white-space:nowrap;font-size:.7rem;font-weight:700}
 .sidebar-bottom .logout-button:hover,.mobile-logout:hover{color:#fff}
 @media(max-width:760px){.mobile-top-auth{display:flex;align-items:center;justify-content:space-between;gap:12px}.mobile-logout{display:flex;align-items:center;gap:6px;padding:8px;border:0;background:none;color:#dce6ee;font-size:.78rem;font-weight:700;white-space:nowrap}}
+
+.login-help{display:grid;gap:10px;margin-top:20px;font-size:.85rem;font-weight:700;color:var(--navy)}
+.login-help a:hover{text-decoration:underline}
+.checkbox-label{display:flex!important;align-items:center;gap:9px!important;font-weight:600}
+.checkbox-label input{width:18px;height:18px;accent-color:var(--orange)}
+.access-request-card{width:min(100%,560px);max-width:560px}
+.access-request-card .brand{padding:0;margin-bottom:26px}
+.access-request-card .form-stack{margin:22px 0 16px}

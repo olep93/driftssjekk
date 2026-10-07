@@ -7,6 +7,7 @@ Intern webapp for uanmeldte konseptsjekker og månedlige driftsgjennomganger i v
 - Fire områder: Drive-In, Butikk, Uteområde og Varemottak. Hvert område får 1,00–10,00 i kvartsteg. Totalen er summen av `score_quarters` delt på 16. Bare visningen avrundes.
 - Uanmeldte konseptsjekker får karakter. Månedlig driftsgjennomgang lagrer observasjoner og bilder uten konseptkarakter. Bare publiserte konseptsjekker i en runde inngår i rangering.
 - Roller er eksplisitte per samvirkelag eller varehus. E-postdomene gir ingen tilgang. Publiserte versjoner og øyeblikksbilder er uforanderlige.
+- I testmiljøet oppretter samvirkelagsadministrator brukere med et midlertidig passord og velger samvirkelag, rolle og eventuelt varehus. Brukeren må velge nytt passord ved første innlogging. Siden `/onsker-tilgang` åpner en e-postforespørsel som brukeren selv sender; den oppretter ikke konto eller en lagret sak.
 - Databasen håndhever rettigheter og sentrale overganger via RLS og `SECURITY DEFINER`-funksjoner. Frontend og API er ikke eneste tilgangssperre.
 - Bilder lagres i privat Storage. Nettleseren reduserer bildestørrelse og koder om til JPEG før direkte opplasting. Dette fjerner vanlig EXIF fra lagret visningsfil. HEIC/HEIF støttes ikke i første versjon.
 - PDF og e-post legges i jobbkø ved publisering. Autoriserte lesere kan også lage PowerPoint fra en publisert rapport.
@@ -18,7 +19,7 @@ Vurderingskriteriene er transkribert fra originalmalen som ble levert 7. oktober
 1. Bruk Node 20 eller nyere og pnpm. Kjør `pnpm install`.
 2. Opprett et **eget utviklingsprosjekt** i Supabase, helst i europeisk region. Kopier `.env.example` til `.env.local` og fyll inn URL, publishable key og secret key. Secret key skal aldri eksponeres i klientkode eller commits.
 3. Kjør SQL-filene i `supabase/migrations/` i nummerrekkefølge mot prosjektet, for eksempel med Supabase CLI `supabase db push` etter at prosjektet er koblet til. Migrasjonene oppretter også private Storage-buckets.
-4. Slå av åpen registrering i Supabase Auth. Sett opp e-post/passord, SMTP for invitasjoner og passordgjenoppretting, og tillatte redirect-URL-er for `/auth/callback`.
+4. Slå av åpen registrering i Supabase Auth. Sett opp e-post/passord og tillatte redirect-URL-er for `/auth/callback`. SMTP for invitasjoner og passordgjenoppretting kreves før ordinær drift; i testmiljøet deler administrator midlertidige passord direkte.
 5. Opprett første administrator kontrollert: legg først inn samvirkelaget i SQL Editor med `insert into public.cooperatives(name) values ('Samvirkelagets navn') returning id;`. Opprett deretter brukeren i Supabase Auth, finn UUID-en, og kjør følgende i SQL Editor. Erstatt plassholderne med faktiske verdier:
 
    ```sql
@@ -60,7 +61,7 @@ pnpm build
 
 SQL-migrasjonene kan syntakssjekkes med PostgreSQL-parser, men må også kjøres mot en ekte Supabase-instans. PDF-testen dekker flersidig A4, lange kommentarer, norske tegn og månedlig rapport uten karakter. PowerPoint-testen kontrollerer en åpnebar presentasjon med kriterier. Bruk `PDF_VISUAL_QA=1 pnpm test` for å skrive en midlertidig QA-PDF under `tmp/pdfs/`; den er ikke et publisert rapportarkiv.
 
-Sist kontrollert 7. oktober 2026: typekontroll, lint og produksjonsbygg besto. Migrasjoner er kjørt i et eget Supabase-demoprosjekt med fiktive data, og RLS-tilgangstestene er kjørt der. Innlogging og rapport-PDF er prøvd mot Vercel-demoen. Dette bekrefter demomiljøet, ikke et ferdig produksjonsoppsett.
+Sist kontrollert 8. oktober 2026: typekontroll, lint og produksjonsbygg besto. Migrasjoner er kjørt i et eget Supabase-demoprosjekt med fiktive data, og RLS-tilgangstestene er kjørt der. Innlogging og rapport-PDF er prøvd mot Vercel-demoen. Dette bekrefter demomiljøet, ikke et ferdig produksjonsoppsett.
 
 ## Produksjonsavklaringer og kjente begrensninger
 
