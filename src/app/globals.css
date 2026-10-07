@@ -26,8 +26,6 @@
 .demo-total{font-size:2.4rem;letter-spacing:-.04em}
 .demo-summary-list{display:grid;gap:11px;margin:22px 0}
 .demo-summary-list>div{display:flex;justify-content:space-between;border-bottom:1px solid var(--line);padding-bottom:9px;font-size:.82rem}
-.demo-save-note{margin:15px 0 0}
-.demo-main .score-control input[readonly]{background:#f5f7f8}
 .mobile-nav button{border:0;background:none;display:grid;justify-items:center;gap:3px;font-size:.6rem;color:var(--muted);min-width:50px}
 .mobile-nav button.selected{color:var(--orange);font-weight:800}
 @media(max-width:1100px){.demo-area-grid{grid-template-columns:repeat(2,minmax(0,1fr))}}
@@ -96,12 +94,12 @@ input::placeholder,textarea::placeholder{color:#8795a4;font-weight:400}
 @media print{.mobile-top,.mobile-nav{display:none!important}.main-content{width:100%;max-width:none;padding:0}}
 
 /* Guided demo assessment */
+.field h2{margin:0}
 .demo-sidebar nav .demo-nav-button{font-weight:600}
 .demo-sidebar nav .demo-nav-button svg{flex:none;color:#9fb1c5}
 .demo-sidebar nav .demo-nav-button.selected svg{color:#fff}
 .demo-banner{background:#f0f4f7;border-color:#dce5ec;color:#445569;border-radius:8px}
 .demo-assessment-heading{margin-bottom:24px}
-.demo-assessment-heading .muted{max-width:620px}
 .demo-assessment-layout{grid-template-columns:minmax(0,1fr) 300px;gap:20px}
 .demo-assessment-areas{display:grid;gap:14px}
 .demo-assessment-card,.demo-summary-card{background:#fff;border:1px solid #dfe6ec;border-radius:10px;box-shadow:var(--shadow)}
@@ -109,17 +107,14 @@ input::placeholder,textarea::placeholder{color:#8795a4;font-weight:400}
 .demo-assessment-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px;padding-bottom:20px;border-bottom:1px solid #edf0f3}
 .demo-assessment-title{display:flex;align-items:center;gap:13px}
 .demo-area-number{width:35px;height:35px;display:grid;place-items:center;flex:none;background:#eef2f6;border:1px solid #dce5eb;border-radius:7px;color:#456078;font-size:.76rem;font-weight:750}
-.demo-overline{display:block;margin-bottom:2px;color:#738194;font-size:.7rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase}
 .demo-assessment-title h2{margin:0;font-size:1.12rem}
 .demo-assessment-score{text-align:right;white-space:nowrap}
 .demo-assessment-score>span{display:block;color:#66768a;font-size:.75rem;font-weight:600}
 .demo-assessment-score output{display:block;color:var(--navy);font-size:1.5rem;font-weight:700;line-height:1.25;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
 .demo-assessment-score small{color:#8290a0;font-size:.78rem;font-weight:500}
-.demo-range-field{padding:21px 1px 18px}
-.demo-range-label,.demo-range-scale{display:flex;justify-content:space-between;align-items:center;gap:12px}
-.demo-range-label label{font-size:.85rem;font-weight:650}
-.demo-range-label span,.demo-range-scale{color:#718092;font-size:.77rem}
-.demo-range-control{display:flex;align-items:center;gap:16px;margin:15px 0 9px}
+.demo-range-field{padding:16px 1px 18px}
+.demo-range-scale{display:flex;justify-content:space-between;align-items:center;gap:12px;color:#718092;font-size:.77rem}
+.demo-range-control{display:flex;align-items:center;gap:16px;margin:0 0 9px}
 .demo-range-control button{width:44px;height:44px;display:grid;place-items:center;flex:none;background:#fff;border:1px solid #cdd7e0;border-radius:8px;color:var(--navy);font-size:1.25rem;font-weight:500;line-height:1}
 .demo-range-control button:hover:not(:disabled){background:#f3f6f8;border-color:#9aafc1}
 .demo-range-control button:disabled{opacity:.4;cursor:not-allowed}
@@ -127,9 +122,6 @@ input::placeholder,textarea::placeholder{color:#8795a4;font-weight:400}
 .demo-range-field input[type="range"]::-webkit-slider-thumb{width:18px;height:18px;border:3px solid #fff;border-radius:50%;background:var(--navy);box-shadow:0 0 0 1px #a9b9c8,0 2px 7px #12253e28;appearance:none;-webkit-appearance:none}
 .demo-range-field input[type="range"]::-moz-range-thumb{width:13px;height:13px;border:3px solid #fff;border-radius:50%;background:var(--navy);box-shadow:0 0 0 1px #a9b9c8,0 2px 7px #12253e28}
 .demo-comment-field{display:grid;gap:7px;color:var(--ink);font-size:.85rem;font-weight:650}
-.demo-comment-label{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
-.demo-comment-label strong{font-weight:650}
-.demo-comment-label span{color:#7b8998;font-size:.77rem;font-weight:400}
 .demo-comment-field textarea{width:100%;min-height:75px;resize:vertical;padding:11px 13px;background:#fff;border:1px solid #cbd5df;border-radius:8px;color:var(--ink);font-size:.9rem;font-weight:400;line-height:1.5;outline:none}
 .demo-comment-field textarea:focus{border-color:var(--orange);box-shadow:0 0 0 3px #e8752630}
 .demo-photos{margin-top:20px;padding-top:18px;border-top:1px solid #edf0f3}
@@ -152,7 +144,6 @@ input::placeholder,textarea::placeholder{color:#8795a4;font-weight:400}
 .demo-photo-add input{position:absolute;inset:0;display:block;width:100%;height:100%;opacity:0;cursor:pointer}
 .demo-photo-add:focus-within{outline:3px solid var(--orange);outline-offset:2px}
 .demo-photo-error{margin:10px 0 0}
-.demo-photo-note{margin:8px 0 0;color:#768596;font-size:.74rem;line-height:1.4}
 .photo-section-title{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
 .photo-section-title strong{font-size:.88rem;font-weight:650}
 .photo-section-title span{color:#7b8998;font-size:.76rem}
@@ -165,15 +156,12 @@ input::placeholder,textarea::placeholder{color:#8795a4;font-weight:400}
 .photo-label:focus-within{outline:3px solid var(--orange);outline-offset:2px}
 .photo-label:has(input:disabled){opacity:.55;cursor:not-allowed}
 .demo-summary-card{position:sticky;top:22px;align-self:start;padding:24px}
-.demo-summary-card .eyebrow{margin-bottom:8px}
 .demo-summary-card h2{margin-bottom:12px;font-size:1.08rem}
 .demo-summary-score{font-size:2.65rem;font-weight:700;line-height:1.1;letter-spacing:-.045em;font-variant-numeric:tabular-nums}
 .demo-summary-score span{color:#7c8998;font-size:1rem;font-weight:500;letter-spacing:0}
-.demo-summary-card .small{margin:10px 0 0}
 .demo-summary-list{margin:22px 0}
 .demo-summary-list>div{font-size:.88rem}
 .demo-reset-button{width:100%}
-.demo-summary-card .demo-save-note{font-size:.78rem;line-height:1.45}
 .score-control{display:inline-flex;align-items:center;gap:0;flex-wrap:nowrap;margin:10px 0 20px;background:#fff;border:1px solid #cbd5df;border-radius:8px;overflow:hidden}
 .score-control button{width:44px;height:48px;flex:none;background:#f8fafc;border:0;border-right:1px solid #dfe6ec;border-radius:0;color:var(--navy);font-size:1.2rem;font-weight:500}
 .score-control button:last-of-type{border-right:0;border-left:1px solid #dfe6ec}
