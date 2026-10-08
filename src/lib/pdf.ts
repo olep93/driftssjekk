@@ -1,11 +1,12 @@
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type PDFPage } from "pdf-lib";
+import sharp from "sharp";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { areas, formatDate, formatScore } from "./scoring";
 import { conceptBand, conceptLabel, criteriaSections } from "./criteria";
 
 type Snapshot = { kind:string;store_name:string;cooperative_name:string;round_title:string|null;visit_date:string;assessor_name:string;summary:string;total:number|null;version_no:number;areas:{key:string;score_quarters:number|null;comment:string;needs_follow_up:boolean;images:{path:string;caption:string}[]}[] };
 const navy=rgb(.07,.15,.25),orange=rgb(.91,.46,.15),muted=rgb(.39,.45,.52),line=rgb(.86,.89,.91),red=rgb(.64,.26,.24),green=rgb(.13,.42,.31);
-export const reportPdfTemplateVersion = "monthly-scores-20261008";
+export const reportPdfTemplateVersion = "editorial-20261008";
 export function reportPdfPath(versionId:string){return `reports/${versionId}-${reportPdfTemplateVersion}.pdf`;}
 function printable(value:string){return value.replace(/[–—−]/g,"-").replace(/[“”]/g,'"').replace(/[’]/g,"'").replace(/[^\u0020-\u00ff\n]/g,"?");}
 function conceptColor(value:number|null){const band=conceptBand(value);return band==="below"?red:band==="above"?green:navy;}
@@ -37,11 +38,13 @@ export async function buildReportPdf(snapshot:Snapshot,supabase:SupabaseClient):
   function text(value:string,size=10,font:PDFFont=regular,color=navy,space=14){
     for(const lineText of splitLines(value,font,size,contentWidth)){room(space);if(lineText)page.drawText(lineText,{x:margin,y,size,font,color});y-=space;}
   }
-  page.drawRectangle({x:0,y:height-10,width,height:10,color:navy});
+  page.drawRectangle({x:0,y:height-11,width,height:11,color:navy});
+  page.drawRectangle({x:0,y:height-11,width:170,height:11,color:orange});
   text(snapshot.kind==="inspection"?"UANMELDT KONSEPTSJEKK":"MÅNEDLIG DRIFTSGJENNOMGANG",10,bold,orange,21);
   text(snapshot.store_name,24,bold,navy,32);
   text(snapshot.cooperative_name+(snapshot.round_title?`  ·  ${snapshot.round_title}`:""),10,regular,muted,19);
-  room(65);page.drawRectangle({x:margin,y:y-56,width:contentWidth,height:61,color:rgb(.96,.97,.98)});
+  room(65);page.drawRectangle({x:margin,y:y-56,width:contentWidth,height:61,color:rgb(.95,.97,.98)});
+  page.drawRectangle({x:margin,y:y-56,width:4,height:61,color:snapshot.kind==="inspection"?conceptColor(snapshot.total):orange});
   page.drawText(snapshot.kind==="inspection"?"TOTALKARAKTER":"DRIFTSKARAKTER",{x:margin+15,y:y-15,size:9,font:bold,color:muted});
   page.drawText(formatScore(snapshot.total),{x:margin+15,y:y-43,size:snapshot.total==null?18:25,font:bold,color:snapshot.kind==="inspection"?conceptColor(snapshot.total):navy});
   if(snapshot.kind==="inspection")page.drawText(printable(conceptLabel(snapshot.total)),{x:margin+96,y:y-43,size:10,font:bold,color:conceptColor(snapshot.total)});
@@ -62,11 +65,20 @@ export async function buildReportPdf(snapshot:Snapshot,supabase:SupabaseClient):
       try{
         const {data,error}=await supabase.storage.from("report-images").download(image.path);
         if(error||!data)throw error||new Error("Bilde mangler");
-        const bytes=await data.arrayBuffer();
-        const embedded=image.path.toLowerCase().endsWith(".png")?await pdf.embedPng(bytes):await pdf.embedJpg(bytes);
-        const dimensions=embedded.scale(Math.min(1,contentWidth/embedded.width,180/embedded.height));
-        room(dimensions.height+38);page.drawImage(embedded,{x:margin,y:y-dimensions.height,width:dimensions.width,height:dimensions.height});y-=dimensions.height+10;
-        if(image.caption)text(image.caption,9,regular,muted,13);y-=11;
+        const original=Buffer.from(await data.arrayBuffer());
+        const metadata=await sharp(original).metadata();
+        const bytes=metadata.format==="png"?original:await sharp(original).rotate().jpeg({quality:88}).toBuffer();
+        const embedded=metadata.format==="png"?await pdf.embedPng(bytes):await pdf.embedJpg(bytes);
+        const portrait=embedded.height>embedded.width;
+        const maxHeight=portrait?330:260;
+        const imageWidth=embedded.width*Math.min(contentWidth/embedded.width,maxHeight/embedded.height);
+        const imageHeight=embedded.height*Math.min(contentWidth/embedded.width,maxHeight/embedded.height);
+        room(imageHeight+48);
+        page.drawRectangle({x:margin,y:y-imageHeight-12,width:contentWidth,height:imageHeight+24,color:rgb(.96,.97,.98)});
+        page.drawImage(embedded,{x:margin+(contentWidth-imageWidth)/2,y:y-imageHeight,width:imageWidth,height:imageHeight});
+        y-=imageHeight+23;
+        if(image.caption)text(image.caption,9,regular,muted,13);
+        y-=16;
       }catch{ text("Bilde er tilgjengelig i nettversjonen.",9,regular,muted,15); }
     }
   }

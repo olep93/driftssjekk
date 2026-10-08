@@ -1,22 +1,45 @@
 "use client";
+
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 
 type Store = { id: string; name: string; cooperative_id: string };
+type Coop = { id: string; name: string };
 type Round = { id: string; title: string; cooperative_id: string; status: string };
-export default function NewReportForm({ stores, rounds, kind, initialStore, initialRound }: { stores: Store[]; rounds: Round[]; kind: "inspection" | "self_check"; initialStore?: string; initialRound?: string }) {
+
+export default function NewReportForm({ stores, coops, rounds, kind, initialStore, initialRound }: {
+  stores: Store[]; coops: Coop[]; rounds: Round[]; kind: "inspection" | "self_check"; initialStore?: string; initialRound?: string;
+}) {
   const router = useRouter();
-  const [storeId, setStoreId] = useState(initialStore && stores.some((s) => s.id === initialStore) ? initialStore : stores[0]?.id || "");
+  const preferredStore = initialStore && stores.some((item) => item.id === initialStore) ? initialStore : stores[0]?.id || "";
+  const [storeId, setStoreId] = useState(preferredStore);
+  const [coopId, setCoopId] = useState(stores.find((item) => item.id === preferredStore)?.cooperative_id || "");
   const [roundId, setRoundId] = useState(initialRound || "");
-  const [busy, setBusy] = useState(false); const [error, setError] = useState("");
-  const coop = stores.find((s) => s.id === storeId)?.cooperative_id;
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const availableCoops = coops.filter((coop) => stores.some((store) => store.cooperative_id === coop.id));
+  const availableStores = stores.filter((store) => store.cooperative_id === coopId);
+
   async function create(event: React.FormEvent) {
     event.preventDefault(); setBusy(true); setError("");
     try {
-      const response = await fetch("/api/reports", { method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({ storeId, roundId: kind === "inspection" && roundId ? roundId : null, kind }) });
-      const result = await response.json(); if (!response.ok) throw new Error(result.error || "Kunne ikke opprette rapport");
+      const response = await fetch("/api/reports", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ storeId, roundId: kind === "inspection" && roundId ? roundId : null, kind }) });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Kunne ikke opprette rapport");
       router.push(`/rapporter/rediger/${result.versionId}`);
-    } catch (e) { setError(e instanceof Error ? e.message : "Kunne ikke opprette rapport"); setBusy(false); }
+    } catch (issue) { setError(issue instanceof Error ? issue.message : "Kunne ikke opprette rapport"); setBusy(false); }
   }
-  return <form onSubmit={create} className="form-stack"><label>Varehus<select required value={storeId} onChange={(e) => {setStoreId(e.target.value);setRoundId("");}}>{stores.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}</select></label>{kind === "inspection" && <label>Konseptsjekkrunde<select value={roundId} onChange={(e) => setRoundId(e.target.value)}><option value="">Enkeltbesøk utenfor runde</option>{rounds.filter((r) => r.cooperative_id === coop).map((r) => <option key={r.id} value={r.id}>{r.title}</option>)}</select></label>}<p className="muted small">{kind === "inspection" ? "Konseptsjekken inngår i rangering når den publiseres i en runde." : "Månedlig driftsgjennomgang har karakterer, kommentarer og bilder per område. Resultatet brukes til intern progresjon og teller ikke i konseptrangeringen."}</p>{error && <p role="alert" className="feedback error">{error}</p>}<button className="button primary" disabled={busy || !storeId}>{busy ? "Oppretter …" : "Start registrering"}</button></form>;
+
+  return <form onSubmit={create} className="form-stack">
+    {availableCoops.length > 1 && <label>Samvirkelag<select value={coopId} onChange={(event) => {
+      const next = event.target.value; setCoopId(next); setStoreId(stores.find((store) => store.cooperative_id === next)?.id || ""); setRoundId("");
+    }}>{availableCoops.map((coop) => <option key={coop.id} value={coop.id}>{coop.name}</option>)}</select></label>}
+    <label>Varehus<select required value={storeId} onChange={(event) => { setStoreId(event.target.value); setRoundId(""); }}>
+      {availableStores.map((store) => <option key={store.id} value={store.id}>{store.name}</option>)}
+    </select></label>
+    {kind === "inspection" && <label>Konseptsjekkrunde<select value={roundId} onChange={(event) => setRoundId(event.target.value)}><option value="">Enkeltbesøk utenfor runde</option>{rounds.filter((round) => round.cooperative_id === coopId).map((round) => <option key={round.id} value={round.id}>{round.title}</option>)}</select></label>}
+    <p className="muted small">{kind === "inspection" ? "Konseptsjekken inngår i rangering når den publiseres i en runde." : "Månedlig driftsgjennomgang har karakterer, kommentarer og bilder per område. Resultatet brukes til intern progresjon og teller ikke i konseptrangeringen."}</p>
+    {error && <p className="feedback error" role="alert">{error}</p>}
+    <button className="button primary" disabled={busy || !storeId}>{busy ? "Oppretter …" : "Start registrering"}</button>
+  </form>;
 }

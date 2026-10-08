@@ -1,4 +1,5 @@
 import PptxGenJS from "pptxgenjs";
+import sharp from "sharp";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { areas, formatDate, formatScore } from "./scoring";
 import { conceptBand, conceptLabel, criteriaSections } from "./criteria";
@@ -6,7 +7,7 @@ import { conceptBand, conceptLabel, criteriaSections } from "./criteria";
 type Snapshot = { kind:string;store_name:string;cooperative_name:string;round_title:string|null;visit_date:string;assessor_name:string;summary:string;total:number|null;version_no:number;areas:{key:string;score_quarters:number|null;comment:string;needs_follow_up:boolean;images:{path:string;caption:string}[]}[] };
 const navy="142B43", orange="D66B28", green="236A4F", red="AD4944", muted="68788A", line="DCE4EB";
 const width=13.333;
-export const reportPptxTemplateVersion="monthly-scores-20261008";
+export const reportPptxTemplateVersion="editorial-20261008";
 export function reportPptxPath(versionId:string){return `reports/${versionId}-${reportPptxTemplateVersion}.pptx`;}
 function bandColor(score:number|null){return conceptBand(score)==="below"?red:conceptBand(score)==="above"?green:navy;}
 function clean(value:string){return value.replace(/[\u0000-\u001f]/g," ").trim();}
@@ -20,11 +21,19 @@ export async function buildReportPptx(snapshot:Snapshot,supabase:SupabaseClient)
   function footer(s:PptxGenJS.Slide){s.addShape(pptx.ShapeType.line,{x:.72,y:7.17,w:11.9,h:0,line:{color:line,width:1}});s.addText(`${kind} · ${snapshot.store_name}`,{x:.73,y:7.22,w:10.7,h:.18,fontFace:"Arial",fontSize:8,color:muted,margin:0});}
   function paragraphSlides(title:string,items:string[],subtitle?:string){const content=items.flatMap((item)=>pieces(item)),created:PptxGenJS.Slide[]=[];let index=0;while(index<content.length){const s=slide(index===0?title:`${title} (forts.)`,subtitle);created.push(s);let y=1.63;while(index<content.length){const item=content[index],lines=Math.max(1,Math.ceil(item.length/88)),boxHeight=.4+Math.max(0,lines-1)*.32,rowHeight=Math.max(.76,boxHeight+.3);if(y+rowHeight>6.85&&y>1.63)break;s.addShape(pptx.ShapeType.ellipse,{x:.78,y:y+.12,w:.08,h:.08,line:{color:orange},fill:{color:orange}});s.addText(item,{x:1.04,y,w:11.3,h:boxHeight,fontFace:"Arial",fontSize:16,color:navy,margin:0,breakLine:false,valign:"middle"});y+=rowHeight;index++;}footer(s);}return created;}
 
-  const cover=slide(snapshot.store_name,`${snapshot.cooperative_name} · ${formatDate(snapshot.visit_date)} · Versjon ${snapshot.version_no}`);
-  cover.addText(kind.toUpperCase(),{x:.74,y:1.8,w:11.7,h:.5,fontFace:"Arial",fontSize:16,bold:true,color:orange,margin:0});
-  cover.addText(formatScore(snapshot.total),{x:.72,y:2.52,w:5.5,h:1.25,fontFace:"Arial",fontSize:snapshot.total==null?32:72,bold:true,color:snapshot.kind==="inspection"?bandColor(snapshot.total):navy,margin:0});
-  cover.addText(snapshot.kind==="inspection"?conceptLabel(snapshot.total):"Intern progresjon · utenfor konseptrangeringen",{x:.75,y:3.82,w:10.5,h:.4,fontFace:"Arial",fontSize:20,bold:true,color:snapshot.kind==="inspection"?bandColor(snapshot.total):navy,margin:0});
-  cover.addText(`Vurderer: ${snapshot.assessor_name||"Ukjent"}`,{x:.75,y:5.2,w:10.5,h:.3,fontFace:"Arial",fontSize:14,color:muted,margin:0});footer(cover);
+  const cover=pptx.addSlide();slides.push(cover);cover.background={color:navy};
+  cover.addShape(pptx.ShapeType.rect,{x:0,y:0,w:.16,h:7.5,line:{color:orange},fill:{color:orange}});
+  cover.addText("DRIFTSSJEKK",{x:.78,y:.56,w:6,h:.3,fontFace:"Arial",fontSize:13,bold:true,color:"AAC0D0",charSpacing:2,margin:0});
+  cover.addText(kind.toUpperCase(),{x:.78,y:1.38,w:11.6,h:.4,fontFace:"Arial",fontSize:17,bold:true,color:"F6A66F",margin:0});
+  cover.addText(snapshot.store_name,{x:.75,y:1.94,w:11.55,h:.88,fontFace:"Arial",fontSize:35,bold:true,color:"FFFFFF",margin:0,fit:"shrink"});
+  cover.addText(`${snapshot.cooperative_name}  ·  ${formatDate(snapshot.visit_date)}`,{x:.78,y:2.94,w:10.8,h:.33,fontFace:"Arial",fontSize:14,color:"BCD0DF",margin:0});
+  cover.addShape(pptx.ShapeType.rect,{x:.78,y:3.75,w:5.15,h:2.14,line:{color:"35516C",width:1},fill:{color:"1D3A55"}});
+  cover.addText(snapshot.kind==="inspection"?"TOTALKARAKTER":"DRIFTSKARAKTER",{x:1.08,y:4.04,w:4.5,h:.28,fontFace:"Arial",fontSize:11,bold:true,color:"AFC3D3",charSpacing:1,margin:0});
+  cover.addText(formatScore(snapshot.total),{x:1.05,y:4.48,w:4.6,h:.95,fontFace:"Arial",fontSize:snapshot.total==null?27:58,bold:true,color:"FFFFFF",margin:0});
+  cover.addText(snapshot.kind==="inspection"?conceptLabel(snapshot.total):"Intern progresjon",{x:6.35,y:4.18,w:5.7,h:.57,fontFace:"Arial",fontSize:23,bold:true,color:snapshot.kind==="inspection"?"FFFFFF":"BCD0DF",margin:0});
+  cover.addText(`Vurderer: ${snapshot.assessor_name||"Ukjent"}\nVersjon ${snapshot.version_no}`,{x:6.37,y:5.03,w:5.7,h:.75,fontFace:"Arial",fontSize:13,color:"BCD0DF",margin:0,breakLine:false});
+  cover.addShape(pptx.ShapeType.line,{x:.78,y:6.98,w:11.77,h:0,line:{color:"446178",width:1}});
+  cover.addText("OBS BYGG  /  VAREHUSSTANDARD",{x:.78,y:7.09,w:8.8,h:.2,fontFace:"Arial",fontSize:9,bold:true,color:"AAC0D0",margin:0});
 
   const summarySlides=paragraphSlides("Oppsummering",[snapshot.summary||"Ingen samlet kommentar."],snapshot.round_title||undefined);
   if(summarySlides.length===1&&clean(snapshot.summary).length<=280){const s=summarySlides[0];s.addText("RESULTAT PER OMRÅDE",{x:.75,y:4.57,w:11,h:.25,fontFace:"Arial",fontSize:11,bold:true,color:muted,margin:0});
@@ -45,11 +54,29 @@ export async function buildReportPptx(snapshot:Snapshot,supabase:SupabaseClient)
     footer(s);
   }
   for(const area of areas){const assessment=snapshot.areas.find((item)=>item.key===area.key);if(!assessment)continue;
-    for(let offset=0;offset<assessment.images.length;offset+=2){const photoSlide=slide(`${area.label} · bilder`,`${offset+1}–${Math.min(offset+2,assessment.images.length)} av ${assessment.images.length}`);let shown=0;
-      for(const [i,image] of assessment.images.slice(offset,offset+2).entries()){
-        try{const {data,error}=await supabase.storage.from("report-images").download(image.path);if(error||!data)throw error||new Error("Bilde mangler");const bytes=new Uint8Array(await data.arrayBuffer());const mime=image.path.toLowerCase().endsWith(".png")?"image/png":"image/jpeg";const x=.75+i*6.25;photoSlide.addImage({data:`data:${mime};base64,${Buffer.from(bytes).toString("base64")}`,x,y:1.53,w:5.72,h:4.58,sizing:{type:"contain",w:5.72,h:4.58},altText:image.caption||`Bilde fra ${area.label}`});photoSlide.addText(clean(image.caption)||`Bilde ${offset+i+1}`,{x,y:6.24,w:5.72,h:.53,fontFace:"Arial",fontSize:12,color:muted,margin:0});shown++;}catch{photoSlide.addText("Bilde kunne ikke hentes",{x:.75+i*6.25,y:3,w:5.72,h:.4,fontFace:"Arial",fontSize:14,color:muted,margin:0});}
-      }
-      if(shown===0)photoSlide.addText("Bildene er tilgjengelige i nettversjonen.",{x:.75,y:4,w:11.6,h:.4,fontFace:"Arial",fontSize:14,color:muted,margin:0});footer(photoSlide);
+    for(const [index,image] of assessment.images.entries()){
+      const photoSlide=slide(area.label,`Dokumentasjon · bilde ${index+1} av ${assessment.images.length}`);
+      try{
+        const {data,error}=await supabase.storage.from("report-images").download(image.path);
+        if(error||!data)throw error||new Error("Bilde mangler");
+        const converted=await sharp(Buffer.from(await data.arrayBuffer())).rotate().jpeg({quality:88}).toBuffer();
+        const metadata=await sharp(converted).metadata();
+        if(!metadata.width||!metadata.height)throw new Error("Ugyldige bildemål");
+        const portrait=metadata.height>metadata.width;
+        const box=portrait?{x:.78,y:1.55,w:7.0,h:5.15}:{x:.78,y:1.53,w:11.75,h:4.83};
+        photoSlide.addShape(pptx.ShapeType.rect,{x:box.x,y:box.y,w:box.w,h:box.h,line:{color:line,width:1},fill:{color:"F4F7F9"}});
+        const scale=Math.min(box.w/metadata.width,box.h/metadata.height);
+        const imageWidth=metadata.width*scale,imageHeight=metadata.height*scale;
+        photoSlide.addImage({data:`data:image/jpeg;base64,${converted.toString("base64")}`,x:box.x+(box.w-imageWidth)/2,y:box.y+(box.h-imageHeight)/2,w:imageWidth,h:imageHeight,altText:image.caption||`Bilde fra ${area.label}`});
+        if(portrait){
+          photoSlide.addShape(pptx.ShapeType.rect,{x:8.12,y:1.55,w:4.38,h:5.15,line:{color:line,width:1},fill:{color:"F9FBFC"}});
+          photoSlide.addText("BILDETEKST",{x:8.45,y:1.92,w:3.68,h:.28,fontFace:"Arial",fontSize:11,bold:true,color:muted,margin:0});
+          photoSlide.addText(clean(image.caption)||"Dokumentasjon fra området",{x:8.45,y:2.36,w:3.68,h:2.8,fontFace:"Arial",fontSize:20,bold:true,color:navy,margin:0,fit:"shrink",valign:"top"});
+        }else{
+          photoSlide.addText(clean(image.caption)||"Dokumentasjon fra området",{x:.8,y:6.48,w:11.7,h:.38,fontFace:"Arial",fontSize:13,bold:true,color:navy,margin:0,fit:"shrink"});
+        }
+      }catch{photoSlide.addText("Bilde kunne ikke hentes",{x:.8,y:3,w:11.5,h:.4,fontFace:"Arial",fontSize:16,color:muted,margin:0});}
+      footer(photoSlide);
     }
   }
   if(snapshot.kind==="inspection"){

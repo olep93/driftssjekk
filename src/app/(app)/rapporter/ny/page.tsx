@@ -1,5 +1,5 @@
 import { redirect } from "next/navigation";
-import { getContext, isOperations } from "@/lib/auth";
+import { canOperateStore, getContext, isOperations } from "@/lib/auth";
 import { PageHeading } from "@/components/ui";
 import NewReportForm from "./new-report-form";
 
@@ -10,7 +10,9 @@ export default async function NewReport({ searchParams }: { searchParams: Promis
   const kind = params.type === "self_check" ? "self_check" : "inspection";
   if (kind === "inspection" && !operations) redirect("/oversikt");
   const { data: stores } = await ctx.supabase.from("stores").select("id,name,cooperative_id").eq("active",true).order("name");
+  const { data: coops } = await ctx.supabase.from("cooperatives").select("id,name").order("name");
   const { data: rounds } = operations ? await ctx.supabase.from("rounds").select("id,title,cooperative_id,status").neq("status","closed").order("sequence_no",{ascending:false}) : { data: [] };
-  const permittedStores = kind === "self_check" ? (stores || []).filter((s) => ctx.memberships.some((m) => m.role === "store_manager" && m.store_id === s.id)) : (stores || []).filter((s) => isOperations(ctx.memberships,s.cooperative_id));
-  return <><PageHeading eyebrow="Rapporter" title={kind === "inspection" ? "Ny uanmeldt konseptsjekk" : "Ny månedlig driftsgjennomgang"} description="Velg varehus og start registreringen. Du kan lagre en ufullstendig kladd."/><section className="panel" style={{maxWidth:650}}><NewReportForm stores={permittedStores} rounds={rounds || []} kind={kind} initialStore={params.store} initialRound={params.round}/></section></>;
+  const permittedStores = kind === "self_check" ? (stores || []).filter((s) => ctx.memberships.some((m) => m.role === "store_manager" && m.store_id === s.id)) : (stores || []).filter((s) => canOperateStore(ctx.memberships,s.cooperative_id,s.id));
+  const homeStore = ctx.memberships.find((membership) => membership.role === "store_manager")?.store_id;
+  return <><PageHeading eyebrow="Rapporter" title={kind === "inspection" ? "Ny uanmeldt konseptsjekk" : "Ny månedlig driftsgjennomgang"} description="Velg varehus og start registreringen. Du kan lagre en ufullstendig kladd."/><section className="panel" style={{maxWidth:650}}><NewReportForm stores={permittedStores} coops={coops || []} rounds={rounds || []} kind={kind} initialStore={params.store || homeStore || undefined} initialRound={params.round}/></section></>;
 }

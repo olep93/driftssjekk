@@ -12,7 +12,7 @@ export default function AdminControls({ coops, stores, memberships, profiles }: 
   coops: Coop[]; stores: Store[]; memberships: Membership[]; profiles: Profile[];
 }) {
   const router = useRouter();
-  const [coop, setCoop] = useState(coops[0]?.id || "");
+  const [coop, setCoop] = useState(coops.find((item) => item.name === "Coop Sørøst")?.id || coops[0]?.id || "");
   const [storeName, setStoreName] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -20,6 +20,8 @@ export default function AdminControls({ coops, stores, memberships, profiles }: 
   const [existingAccount, setExistingAccount] = useState(false);
   const [role, setRole] = useState("store_manager");
   const [storeId, setStoreId] = useState("");
+  const [allStores, setAllStores] = useState(true);
+  const [selectedStores, setSelectedStores] = useState<string[]>([]);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
 
@@ -40,6 +42,7 @@ export default function AdminControls({ coops, stores, memberships, profiles }: 
     try {
       const response = await fetch("/api/invitations", { method: "POST", headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ cooperativeId: coop, storeId: role === "store_manager" ? storeId : null,
+          storeIds: role === "operations" && !allStores ? selectedStores : [],
           role, email, name, password: existingAccount ? undefined : password }) });
       const result = await response.json();
       if (response.ok) {
@@ -47,7 +50,7 @@ export default function AdminControls({ coops, stores, memberships, profiles }: 
           ? "Brukeren er opprettet. Del det midlertidige passordet direkte med brukeren. Passordet må byttes ved første innlogging."
           : result.assigned ? "Eksisterende bruker har fått tilgang. Det tidligere passordet er uendret."
             : "Brukeren hadde allerede denne tilgangen.");
-        setName(""); setEmail(""); setPassword(""); router.refresh();
+        setName(""); setEmail(""); setPassword(""); setSelectedStores([]); router.refresh();
       } else setMessage(result.error || "Kunne ikke opprette brukeren.");
     } catch { setMessage("Kunne ikke kontakte serveren."); }
     finally { setBusy(false); }
@@ -63,7 +66,7 @@ export default function AdminControls({ coops, stores, memberships, profiles }: 
 
   return <>
     <div className="filters" style={{ marginBottom: 20 }}><label>Samvirkelag
-      <select value={coop} onChange={(event) => { setCoop(event.target.value); setStoreId(""); }}>
+      <select value={coop} onChange={(event) => { setCoop(event.target.value); setStoreId(""); setSelectedStores([]); }}>
         {coops.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
       </select></label></div>
     <div className="grid-2">
@@ -89,7 +92,15 @@ export default function AdminControls({ coops, stores, memberships, profiles }: 
             <option value="">Velg varehus</option>
             {stores.filter((store) => store.cooperative_id === coop && store.active).map((store) => <option key={store.id} value={store.id}>{store.name}</option>)}
           </select></label>}
-          <button className="button primary" disabled={busy}>{busy ? "Lagrer …" : "Opprett / tildel tilgang"}</button>
+          {role === "operations" && <fieldset className="access-scope"><legend>Tilgang som driftssjef</legend>
+            <label className="checkbox-label"><input type="checkbox" checked={allStores} onChange={(event) => { setAllStores(event.target.checked); setSelectedStores([]); }} /> Alle varehus i samvirkelaget</label>
+            {!allStores && <><p className="muted small">Velg varehus driftssjefen kan se og gjennomføre konseptsjekk for.</p>
+              {stores.filter((store) => store.cooperative_id === coop && store.active).map((store) => <label className="checkbox-label" key={store.id}>
+                <input type="checkbox" checked={selectedStores.includes(store.id)} onChange={(event) => setSelectedStores((current) => event.target.checked ? [...current, store.id] : current.filter((id) => id !== store.id))} /> {store.name}
+              </label>)}
+            </>}
+          </fieldset>}
+          <button className="button primary" disabled={busy || (role === "operations" && !allStores && !selectedStores.length)}>{busy ? "Lagrer …" : "Opprett / tildel tilgang"}</button>
         </form>
       </section>
     </div>
@@ -98,7 +109,7 @@ export default function AdminControls({ coops, stores, memberships, profiles }: 
       {memberships.filter((membership) => membership.cooperative_id === coop).map((membership) => <tr key={membership.id}>
         <td>{profiles.find((profile) => profile.id === membership.user_id)?.display_name || membership.user_id.slice(0, 8)}</td>
         <td>{membership.role === "operations" ? "Driftssjef" : membership.role === "store_manager" ? "Varehussjef" : "Administrator"}</td>
-        <td>{stores.find((store) => store.id === membership.store_id)?.name || "Alle i samvirkelaget"}</td>
+        <td>{stores.find((store) => store.id === membership.store_id)?.name || "Alle varehus i samvirkelaget"}</td>
         <td><button className="text-button" onClick={() => void revoke(membership.id)}>Fjern tilgang</button></td>
       </tr>)}
     </tbody></table></div></section>

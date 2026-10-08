@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { getContext, isOperations } from "@/lib/auth";
+import { defaultCooperativeId, getContext, isOperations } from "@/lib/auth";
 import { loadCore, scoreFor } from "@/lib/data";
 import { areas, formatDate, formatScore, type AreaKey } from "@/lib/scoring";
 import { PageHeading, Score } from "@/components/ui";
@@ -8,7 +8,7 @@ import { CriteriaReference } from "@/components/criteria-reference";
 
 export default async function PeriodReport({searchParams}:{searchParams:Promise<{coop?:string;store?:string;from?:string;to?:string;kind?:string}>}){
   const params=await searchParams;const ctx=await getContext();
-  const selectedCoop=ctx.memberships.some((m)=>m.cooperative_id===params.coop)?params.coop!:ctx.memberships[0].cooperative_id;
+  const selectedCoop=ctx.memberships.some((m)=>m.cooperative_id===params.coop)?params.coop!:defaultCooperativeId(ctx.memberships)!;
   const operations=isOperations(ctx.memberships,selectedCoop);
   const kind=params.kind==="self_check"?"self_check":"inspection";
   const today=new Intl.DateTimeFormat("sv-SE",{timeZone:"Europe/Oslo",year:"numeric",month:"2-digit",day:"2-digit"}).format(new Date());

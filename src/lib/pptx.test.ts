@@ -2,6 +2,7 @@ import { describe,expect,it } from "vitest";
 import { mkdirSync,writeFileSync } from "node:fs";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { buildReportPptx } from "./pptx";
+import sharp from "sharp";
 
 describe("rapport-PowerPoint",()=>{
   it("lager en åpnebar presentasjon med sammendrag, områder og kriterier",async()=>{
@@ -16,5 +17,15 @@ describe("rapport-PowerPoint",()=>{
     const bytes=await buildReportPptx(snapshot,{} as SupabaseClient);
     expect(Buffer.from(bytes.subarray(0,4)).toString("hex")).toBe("504b0304");
     if(process.env.PPTX_VISUAL_QA==="1"){mkdirSync("tmp/pptx",{recursive:true});writeFileSync("tmp/pptx/qa-maanedlig.pptx",bytes);}
+  });
+  it("legger stående og liggende bilder på egne lysbilder",async()=>{
+    const landscape=await sharp({create:{width:1200,height:760,channels:3,background:"#55758b"}}).jpeg().toBuffer();
+    const portrait=await sharp({create:{width:760,height:1200,channels:3,background:"#b98967"}}).webp().toBuffer();
+    const photos=new Map([["landscape.jpg",landscape],["portrait.webp",portrait]]);
+    const storage={storage:{from:()=>({download:async(path:string)=>({data:new Blob([new Uint8Array(photos.get(path)!)],{type:path.endsWith("webp")?"image/webp":"image/jpeg"}),error:null})})}} as unknown as SupabaseClient;
+    const snapshot={kind:"inspection",store_name:"Obs Bygg Tønsberg",cooperative_name:"Coop Sørøst",round_title:null,visit_date:"2026-10-08",assessor_name:"Driftssjef",summary:"Foto fra befaringen.",total:6.25,version_no:1,areas:["drive_in","store","outdoor","goods_receiving"].map((key)=>({key,score_quarters:25,comment:"Kort observasjon.",needs_follow_up:false,images:key==="store"?[{path:"landscape.jpg",caption:"Liggende butikkbilde"},{path:"portrait.webp",caption:"Stående butikkbilde"}]:[]}))};
+    const bytes=await buildReportPptx(snapshot,storage);
+    expect(bytes.byteLength).toBeGreaterThan(10000);
+    if(process.env.PPTX_VISUAL_QA==="1"){mkdirSync("tmp/pptx",{recursive:true});writeFileSync("tmp/pptx/qa-bildeorientering.pptx",bytes);}
   });
 });

@@ -5,14 +5,14 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { BarChart3, BookOpen, ClipboardList, FileText, ListChecks, MoreHorizontal, Plus, Settings, UserPlus, Warehouse, X } from "lucide-react";
 
-type Permissions = { operations: boolean; monthly: boolean; admin?: boolean; storeId?: string };
+type Permissions = { operations: boolean; fullOperations?: boolean; monthly: boolean; admin?: boolean; storeId?: string };
 
-function createLinks({ operations, monthly, admin, storeId }: Permissions) {
+function createLinks({ operations, fullOperations, monthly, admin, storeId }: Permissions) {
   const store = storeId ? `&store=${encodeURIComponent(storeId)}` : "";
   return [
     ...(operations ? [{ href: `/rapporter/ny?type=inspection${store}`, label: "Uanmeldt konseptsjekk", detail: "Vurder et varehus", icon: ClipboardList }] : []),
     ...(monthly ? [{ href: `/rapporter/ny?type=self_check${store}`, label: "Månedlig driftsgjennomgang", detail: "Vurder varehuset for intern progresjon", icon: FileText }] : []),
-    ...(operations && !storeId ? [{ href: "/runder/ny", label: "Konseptsjekkrunde", detail: "Planlegg flere varehusbesøk", icon: Plus }] : []),
+    ...(fullOperations && !storeId ? [{ href: "/runder/ny", label: "Konseptsjekkrunde", detail: "Planlegg flere varehusbesøk", icon: Plus }] : []),
     ...(admin && !storeId ? [{ href: "/administrasjon", label: "Ny bruker", detail: "Opprett bruker og tildel tilgang", icon: UserPlus }] : []),
   ];
 }
@@ -50,7 +50,7 @@ export function MobileNavigation(props: Permissions) {
   }, [panel]);
   const newLinks = createLinks(props);
   const moreLinks = [
-    ...(props.operations ? [{ href: "/runder", label: "Konseptsjekkrunder", icon: ClipboardList }] : []),
+    ...(props.fullOperations ? [{ href: "/runder", label: "Konseptsjekkrunder", icon: ClipboardList }] : []),
     { href: "/oppfolging", label: "Oppfølging", icon: ListChecks },
     { href: "/kriterier", label: "Kriterier", icon: BookOpen },
     ...(props.admin ? [{ href: "/administrasjon", label: "Administrasjon", icon: Settings }] : []),

@@ -1,0 +1,392 @@
+[
+  {
+    "cooperative": "Coop Nord",
+    "cooperativeCode": "101055",
+    "store": "Obs Bygg Tromsø",
+    "storeCode": "2371"
+  },
+  {
+    "cooperative": "Coop Nord",
+    "cooperativeCode": "101055",
+    "store": "Obs Bygg Bardufoss",
+    "storeCode": "3173"
+  },
+  {
+    "cooperative": "Coop Nord",
+    "cooperativeCode": "101055",
+    "store": "Obs Bygg Narvik",
+    "storeCode": "3539"
+  },
+  {
+    "cooperative": "Coop Finnmark",
+    "cooperativeCode": "101832",
+    "store": "Obs Bygg Alta",
+    "storeCode": "3575"
+  },
+  {
+    "cooperative": "Coop Innlandet",
+    "cooperativeCode": "123976",
+    "store": "Obs Bygg Rudshøgda",
+    "storeCode": "2272"
+  },
+  {
+    "cooperative": "Coop Innlandet",
+    "cooperativeCode": "123976",
+    "store": "Obs Bygg Kallerud",
+    "storeCode": "2706"
+  },
+  {
+    "cooperative": "Coop Innlandet",
+    "cooperativeCode": "123976",
+    "store": "Obs Bygg Olrud",
+    "storeCode": "3568"
+  },
+  {
+    "cooperative": "Coop Innlandet",
+    "cooperativeCode": "123976",
+    "store": "Obs Bygg Elverum",
+    "storeCode": "3580"
+  },
+  {
+    "cooperative": "Coop Øst",
+    "cooperativeCode": "13540",
+    "store": "Obs Bygg Jessheim",
+    "storeCode": "2708"
+  },
+  {
+    "cooperative": "Coop Øst",
+    "cooperativeCode": "13540",
+    "store": "Obs Bygg Nygårdskrysset",
+    "storeCode": "2709"
+  },
+  {
+    "cooperative": "Coop Øst",
+    "cooperativeCode": "13540",
+    "store": "Obs Bygg Alnabru",
+    "storeCode": "3507"
+  },
+  {
+    "cooperative": "Coop Øst",
+    "cooperativeCode": "13540",
+    "store": "Obs Bygg Haugenstua",
+    "storeCode": "3532"
+  },
+  {
+    "cooperative": "Coop Øst",
+    "cooperativeCode": "13540",
+    "store": "Obs Bygg Hønefoss",
+    "storeCode": "3536"
+  },
+  {
+    "cooperative": "Coop Øst",
+    "cooperativeCode": "13540",
+    "store": "Obs Bygg Moss",
+    "storeCode": "3538"
+  },
+  {
+    "cooperative": "Coop Øst",
+    "cooperativeCode": "13540",
+    "store": "Obs Bygg Fredrikstad",
+    "storeCode": "3581"
+  },
+  {
+    "cooperative": "Coop Øst",
+    "cooperativeCode": "13540",
+    "store": "Obs Bygg Kongsvinger",
+    "storeCode": "3607"
+  },
+  {
+    "cooperative": "Coop Øst",
+    "cooperativeCode": "13540",
+    "store": "Obs Bygg Lillestrøm",
+    "storeCode": "5014"
+  },
+  {
+    "cooperative": "Coop Øst",
+    "cooperativeCode": "13540",
+    "store": "Obs Bygg Slitu",
+    "storeCode": "5054"
+  },
+  {
+    "cooperative": "Coop Øst",
+    "cooperativeCode": "13540",
+    "store": "Obs Bygg Tune",
+    "storeCode": "5064"
+  },
+  {
+    "cooperative": "Coop Vestviken",
+    "cooperativeCode": "13615",
+    "store": "Obs Bygg Bærum",
+    "storeCode": "3512"
+  },
+  {
+    "cooperative": "Coop Sørøst",
+    "cooperativeCode": "14407",
+    "store": "Obs Bygg Mjøndalen",
+    "storeCode": "2603"
+  },
+  {
+    "cooperative": "Coop Sørøst",
+    "cooperativeCode": "14407",
+    "store": "Obs Bygg Kongsberg",
+    "storeCode": "3570"
+  },
+  {
+    "cooperative": "Coop Sørøst",
+    "cooperativeCode": "14407",
+    "store": "Obs Bygg Sandefjord",
+    "storeCode": "3571"
+  },
+  {
+    "cooperative": "Coop Sørøst",
+    "cooperativeCode": "14407",
+    "store": "Obs Bygg Tønsberg",
+    "storeCode": "3588"
+  },
+  {
+    "cooperative": "Coop Sørøst",
+    "cooperativeCode": "14407",
+    "store": "Obs Bygg Skien",
+    "storeCode": "5087"
+  },
+  {
+    "cooperative": "Coop Klepp",
+    "cooperativeCode": "50351",
+    "store": "Obs Bygg Klepp",
+    "storeCode": "3040"
+  },
+  {
+    "cooperative": "Madla Handelslag",
+    "cooperativeCode": "50443",
+    "store": "Obs Bygg Madla",
+    "storeCode": "3594"
+  },
+  {
+    "cooperative": "Coop Økonom",
+    "cooperativeCode": "50906",
+    "store": "Obs Bygg Forus",
+    "storeCode": "2271"
+  },
+  {
+    "cooperative": "Coop Økonom",
+    "cooperativeCode": "50906",
+    "store": "Obs Bygg Mariero",
+    "storeCode": "2418"
+  },
+  {
+    "cooperative": "Coop Økonom",
+    "cooperativeCode": "50906",
+    "store": "Obs Bygg Buøy",
+    "storeCode": "3579"
+  },
+  {
+    "cooperative": "Coop Gjesdal",
+    "cooperativeCode": "51185",
+    "store": "Obs Bygg Ålgård",
+    "storeCode": "3506"
+  },
+  {
+    "cooperative": "Coop Sørvest",
+    "cooperativeCode": "51482",
+    "store": "Obs Bygg Stord",
+    "storeCode": "3466"
+  },
+  {
+    "cooperative": "Coop Sørvest",
+    "cooperativeCode": "51482",
+    "store": "Obs Bygg Bryne",
+    "storeCode": "3517"
+  },
+  {
+    "cooperative": "Coop Sørvest",
+    "cooperativeCode": "51482",
+    "store": "Obs Bygg Sørlandsparken",
+    "storeCode": "3550"
+  },
+  {
+    "cooperative": "Coop Sørvest",
+    "cooperativeCode": "51482",
+    "store": "Obs Bygg Sandnes",
+    "storeCode": "3563"
+  },
+  {
+    "cooperative": "Coop Sørvest",
+    "cooperativeCode": "51482",
+    "store": "Obs Bygg Haugesund",
+    "storeCode": "3578"
+  },
+  {
+    "cooperative": "Coop Sørvest",
+    "cooperativeCode": "51482",
+    "store": "Obs Bygg Arendal",
+    "storeCode": "3603"
+  },
+  {
+    "cooperative": "Coop Sørvest",
+    "cooperativeCode": "51482",
+    "store": "Obs Bygg Åkrehamn",
+    "storeCode": "3615"
+  },
+  {
+    "cooperative": "Coop Hordaland",
+    "cooperativeCode": "62208",
+    "store": "Obs Bygg Lagunen",
+    "storeCode": "2268"
+  },
+  {
+    "cooperative": "Coop Hordaland",
+    "cooperativeCode": "62208",
+    "store": "Obs Bygg Åsane",
+    "storeCode": "2497"
+  },
+  {
+    "cooperative": "Coop Hordaland",
+    "cooperativeCode": "62208",
+    "store": "Obs Bygg Kokstad",
+    "storeCode": "2498"
+  },
+  {
+    "cooperative": "Coop Hordaland",
+    "cooperativeCode": "62208",
+    "store": "Obs Bygg Midtun",
+    "storeCode": "3543"
+  },
+  {
+    "cooperative": "Coop Hordaland",
+    "cooperativeCode": "62208",
+    "store": "Obs Bygg Straume",
+    "storeCode": "3595"
+  },
+  {
+    "cooperative": "Coop Hordaland",
+    "cooperativeCode": "62208",
+    "store": "Obs Bygg Voss",
+    "storeCode": "3610"
+  },
+  {
+    "cooperative": "Coop Oppdal",
+    "cooperativeCode": "81141",
+    "store": "Obs Bygg Støren",
+    "storeCode": "3596"
+  },
+  {
+    "cooperative": "Coop Oppdal",
+    "cooperativeCode": "81141",
+    "store": "Obs Bygg Oppdal",
+    "storeCode": "3611"
+  },
+  {
+    "cooperative": "Coop Nordvest",
+    "cooperativeCode": "83063",
+    "store": "Obs Bygg Ålesund",
+    "storeCode": "2276"
+  },
+  {
+    "cooperative": "Coop Nordvest",
+    "cooperativeCode": "83063",
+    "store": "Obs Bygg Volda",
+    "storeCode": "3363"
+  },
+  {
+    "cooperative": "Coop Nordvest",
+    "cooperativeCode": "83063",
+    "store": "Obs Bygg Førde",
+    "storeCode": "3462"
+  },
+  {
+    "cooperative": "Coop Nordvest",
+    "cooperativeCode": "83063",
+    "store": "Obs Bygg Molde",
+    "storeCode": "3482"
+  },
+  {
+    "cooperative": "Coop Nordvest",
+    "cooperativeCode": "83063",
+    "store": "Obs Bygg Orkanger",
+    "storeCode": "3487"
+  },
+  {
+    "cooperative": "Coop Nordvest",
+    "cooperativeCode": "83063",
+    "store": "Obs Bygg Kristiansund",
+    "storeCode": "3497"
+  },
+  {
+    "cooperative": "Coop Nordvest",
+    "cooperativeCode": "83063",
+    "store": "Obs Bygg Ulsteinvik",
+    "storeCode": "3498"
+  },
+  {
+    "cooperative": "Coop Nordvest",
+    "cooperativeCode": "83063",
+    "store": "Obs Bygg Digernes",
+    "storeCode": "3551"
+  },
+  {
+    "cooperative": "Coop Midt-Norge",
+    "cooperativeCode": "83154",
+    "store": "Obs Bygg Tiller",
+    "storeCode": "2344"
+  },
+  {
+    "cooperative": "Coop Midt-Norge",
+    "cooperativeCode": "83154",
+    "store": "Obs Bygg Namsos",
+    "storeCode": "3467"
+  },
+  {
+    "cooperative": "Coop Midt-Norge",
+    "cooperativeCode": "83154",
+    "store": "Obs Bygg Levanger",
+    "storeCode": "3469"
+  },
+  {
+    "cooperative": "Coop Midt-Norge",
+    "cooperativeCode": "83154",
+    "store": "Obs Bygg Steinkjer",
+    "storeCode": "3508"
+  },
+  {
+    "cooperative": "Coop Midt-Norge",
+    "cooperativeCode": "83154",
+    "store": "Obs Bygg Verdal",
+    "storeCode": "3509"
+  },
+  {
+    "cooperative": "Coop Midt-Norge",
+    "cooperativeCode": "83154",
+    "store": "Obs Bygg Stjørdal",
+    "storeCode": "3574"
+  },
+  {
+    "cooperative": "Coop Midt-Norge",
+    "cooperativeCode": "83154",
+    "store": "Obs Bygg Leangen",
+    "storeCode": "3582"
+  },
+  {
+    "cooperative": "Coop Midt-Norge",
+    "cooperativeCode": "83154",
+    "store": "Obs Bygg Mo",
+    "storeCode": "3602"
+  },
+  {
+    "cooperative": "Coop Nordland",
+    "cooperativeCode": "90746",
+    "store": "Obs Bygg Fauske",
+    "storeCode": "3489"
+  },
+  {
+    "cooperative": "Coop Nordland",
+    "cooperativeCode": "90746",
+    "store": "Obs Bygg Sortland",
+    "storeCode": "3541"
+  },
+  {
+    "cooperative": "Coop Nordland",
+    "cooperativeCode": "90746",
+    "store": "Obs Bygg Bodø",
+    "storeCode": "3608"
+  }
+]

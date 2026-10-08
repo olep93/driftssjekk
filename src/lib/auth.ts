@@ -13,8 +13,17 @@ export async function getContext() {
     supabase.from("memberships").select("id,cooperative_id,store_id,role").eq("user_id", userId),
     supabase.from("profiles").select("display_name").eq("id", userId).maybeSingle(),
   ]);
-  return { supabase, userId, memberships: (memberships || []) as Membership[], name: profile?.display_name || "Bruker" };
+  return { supabase, userId, memberships: (memberships || []) as Membership[], name: profile?.display_name || "Bruker", systemAdmin: identity.user?.app_metadata?.system_admin === true };
 }
 export function isOperations(memberships: Membership[], cooperativeId?: string) {
   return memberships.some((m) => m.role === "operations" && (!cooperativeId || m.cooperative_id === cooperativeId));
+}
+export function isFullOperations(memberships: Membership[], cooperativeId?: string) {
+  return memberships.some((m) => m.role === "operations" && m.store_id === null && (!cooperativeId || m.cooperative_id === cooperativeId));
+}
+export function canOperateStore(memberships: Membership[], cooperativeId: string, storeId: string) {
+  return memberships.some((m) => m.role === "operations" && m.cooperative_id === cooperativeId && (m.store_id === null || m.store_id === storeId));
+}
+export function defaultCooperativeId(memberships: Membership[]) {
+  return memberships.find((m) => m.role === "store_manager")?.cooperative_id || memberships[0]?.cooperative_id;
 }

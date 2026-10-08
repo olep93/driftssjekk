@@ -6,6 +6,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 const schema = z.object({
   cooperativeId: z.uuid(),
   storeId: z.uuid().nullable(),
+  storeIds: z.array(z.uuid()).max(100).optional(),
   role: z.enum(["operations", "store_manager", "cooperative_admin"]),
   email: z.email().trim().toLowerCase(),
   name: z.string().trim().min(2).max(150),
@@ -18,15 +19,18 @@ export async function POST(request: Request) {
   const parsed = schema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return apiError("Kontroller navn, e-post og passord (minst 12 tegn).");
   const { cooperativeId, storeId, role, email, name, password } = parsed.data;
+  const selectedStores = [...new Set(parsed.data.storeIds || [])];
 
   const { data: myRole } = await auth.supabase.from("memberships").select("id")
     .eq("user_id", auth.userId).eq("cooperative_id", cooperativeId).eq("role", "cooperative_admin").maybeSingle();
   if (!myRole) return apiError("Ingen tilgang", 403);
   if ((role === "store_manager") !== Boolean(storeId)) return apiError("Varehussjef må ha ett varehus.");
-  if (storeId) {
-    const { data: store } = await auth.supabase.from("stores").select("id")
-      .eq("id", storeId).eq("cooperative_id", cooperativeId).eq("active", true).maybeSingle();
-    if (!store) return apiError("Ugyldig varehus.");
+  if (role !== "operations" && selectedStores.length) return apiError("Varehusutvalg gjelder bare driftssjef.");
+  const requestedStores = storeId ? [storeId] : selectedStores;
+  if (requestedStores.length) {
+    const { data: validStores } = await auth.supabase.from("stores").select("id")
+      .in("id", requestedStores).eq("cooperative_id", cooperativeId).eq("active", true);
+    if (validStores?.length !== requestedStores.length) return apiError("Ett eller flere varehus er ugyldige.");
   }
 
   try {
@@ -56,20 +60,23 @@ export async function POST(request: Request) {
         return apiError("Kunne ikke lagre brukerprofilen.", 500);
       }
     }
-    let priorQuery = admin.from("memberships").select("id")
+    const { data: prior, error: priorError } = await admin.from("memberships").select("store_id")
       .eq("user_id", userId).eq("cooperative_id", cooperativeId).eq("role", role);
-    priorQuery = storeId ? priorQuery.eq("store_id", storeId) : priorQuery.is("store_id", null);
-    const { data: prior } = await priorQuery.maybeSingle();
-    if (prior) return NextResponse.json({ ok: true, created: false, assigned: false });
+    if (priorError) return apiError("Kunne ikke kontrollere eksisterende tilgang.", 500);
+    if (role === "operations" && selectedStores.length && prior?.some((entry) => entry.store_id === null))
+      return apiError("Brukeren har allerede tilgang til alle varehus. Fjern den tildelingen før du velger enkelte varehus.");
+    const targetStores = role === "operations" && selectedStores.length ? selectedStores : [storeId];
+    const missing = targetStores.filter((id) => !prior?.some((entry) => entry.store_id === id));
+    if (!missing.length) return NextResponse.json({ ok: true, created: false, assigned: false });
     const { error: membershipError } = await admin.from("memberships")
-      .insert({ user_id: userId, cooperative_id: cooperativeId, store_id: storeId, role });
+      .insert(missing.map((id) => ({ user_id: userId, cooperative_id: cooperativeId, store_id: id, role })));
     if (membershipError) {
       if (created) await admin.auth.admin.deleteUser(userId);
       return apiError("Kunne ikke tildele rollen. Prøv igjen.", 500);
     }
     await admin.from("audit_events").insert({ cooperative_id: cooperativeId, actor_id: auth.userId,
       event_type: "granted", object_type: "membership", object_id: userId,
-      details: { role, store_id: storeId, account_created: created } });
+      details: { role, store_ids: missing, account_created: created } });
     return NextResponse.json({ ok: true, created, assigned: true });
   } catch {
     return apiError("Brukeropprettelse er ikke konfigurert.", 503);

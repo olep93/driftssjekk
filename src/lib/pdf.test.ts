@@ -3,6 +3,7 @@ import { PDFDocument } from "pdf-lib";
 import { mkdirSync, writeFileSync } from "node:fs";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { buildReportPdf } from "./pdf";
+import sharp from "sharp";
 
 describe("rapport-PDF",()=>{
   it("lager en flersidig A4-PDF med norske tegn og lang tekst",async()=>{
@@ -24,5 +25,16 @@ describe("rapport-PDF",()=>{
     const snapshot={kind:"inspection",store_name:"Tønsberg",cooperative_name:"Coop Sørøst",round_title:null,visit_date:"2026-10-08",assessor_name:"Testkonto",summary:"Kort oppsummering",total:6,version_no:1,areas:["drive_in","store","outdoor","goods_receiving"].map((key)=>({key,score_quarters:24,comment:"Kort observasjon.",needs_follow_up:false,images:[]}))};
     const pdf=await PDFDocument.load(await buildReportPdf(snapshot,{} as SupabaseClient));
     expect(pdf.getPageCount()).toBe(2);
+  });
+  it("plasserer stående og liggende bilder i PDF-en",async()=>{
+    const landscape=await sharp({create:{width:1200,height:760,channels:3,background:"#55758b"}}).jpeg().toBuffer();
+    const portrait=await sharp({create:{width:760,height:1200,channels:3,background:"#b98967"}}).webp().toBuffer();
+    const photos=new Map([["landscape.jpg",landscape],["portrait.webp",portrait]]);
+    const storage={storage:{from:()=>({download:async(path:string)=>({data:new Blob([new Uint8Array(photos.get(path)!)],{type:path.endsWith("webp")?"image/webp":"image/jpeg"}),error:null})})}} as unknown as SupabaseClient;
+    const snapshot={kind:"self_check",store_name:"Obs Bygg Tønsberg",cooperative_name:"Coop Sørøst",round_title:null,visit_date:"2026-10-08",assessor_name:"Varehussjef",summary:"Foto fra befaringen.",total:6.25,version_no:1,areas:["drive_in","store","outdoor","goods_receiving"].map((key)=>({key,score_quarters:25,comment:"Kort observasjon.",needs_follow_up:false,images:key==="store"?[{path:"landscape.jpg",caption:"Liggande butikkbilde"},{path:"portrait.webp",caption:"Stående butikkbilde"}]:[]}))};
+    const bytes=await buildReportPdf(snapshot,storage);
+    const pdf=await PDFDocument.load(bytes);
+    expect(pdf.getPageCount()).toBeGreaterThanOrEqual(2);
+    if(process.env.PDF_VISUAL_QA==="1"){mkdirSync("tmp/pdfs",{recursive:true});writeFileSync("tmp/pdfs/qa-bildeorientering.pdf",bytes);}
   });
 });

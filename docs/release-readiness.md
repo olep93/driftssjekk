@@ -1,30 +1,23 @@
 # Status før pilot og lansering
 
-Oppdatert 8. oktober 2026. Løsningen på `driftssjekk.vercel.app` er en innloggingsbeskyttet test med fiktive vurderinger. Den innloggede testen har database, roller og rapportflyt, men er ikke satt opp for ordinær drift. Tidligere `/demo`-lenker sender besøkende til innlogging eller oversikten.
+Oppdatert 8. oktober 2026.
 
-## Kan prøves nå
+## Klart for kontrollert prøve
 
-- Oversikt, konseptsjekkrunder, varehus, rapporter, kriterier, oppfølging og administrasjon kan utforskes med demodata.
-- Inviterte brukere kan opprette og lagre en testvurdering i et varehus de har tilgang til.
-- Innlogging, publisering og tilgangstester er verifisert i demomiljøet. Både PDF og PowerPoint er lastet ned fra Vercel med en innlogget testkonto og kontrollert som åpnebare filer.
-- Testkontoen `ole.kristiansen@coop.no` er knyttet til Tønsberg og har administrasjons- og driftsrolle i begge nåværende testsamvirkelag. En testkladd og en publisert fiktiv rapport uten rundetilknytning er opprettet.
-- Administrator kan opprette nye brukere med midlertidig passord og tildele rolle, samvirkelag og varehus. Passordet byttes ved første innlogging. `/onsker-tilgang` lager en e-postforespørsel som avsenderen selv må sende; forespørsler lagres foreløpig ikke i appen.
-- Typografi, felter og prøvevurdering er kontrollert på PC og smal mobilvisning.
+- `driftssjekk.vercel.app` er bak innlogging. Åpen prøvedemo og fiktive testkontoer, rapporter og runder er fjernet.
+- 65 aktive Obs Bygg-varehus i 16 samvirkelag er lagt inn. Coop Sørøst har fem varehus. Den utelatte Larvik-raden var markert med `X` i Excel-filen.
+- `ole.kristiansen@coop.no` er systemadministrator med tilgang til samvirkelagene, og er varehussjef for Obs Bygg Tønsberg. Kontoen kan lage både uanmeldt konseptsjekk og månedlig driftsgjennomgang i Tønsberg. Systemadministrator kan slette testene etterpå.
+- Driftssjefer kan tildeles alle eller valgte varehus i et samvirkelag. Oppgaver fra publiserte rapporter vises for tilhørende varehus, som kan svare med tekst, status og bilde.
+- PDF og PowerPoint er kontrollert med både stående og liggende testbilder. Kriteriene er komprimert til et vedlegg i konseptsjekkeksportene.
+- Supabase-databasen ligger i Stockholm. Vercel-funksjoner er konfigurert for Stockholm (`arn1`); produksjonsdistribusjonen må verifiseres etter publisering.
 
-## Før en pilot med faktiske Coop-brukere
+## Før bredere bruk
 
-1. Avklar hvilke samvirkelag og varehus som skal være med. Excel-oversikten som er lagt i prosjektmappen inneholder 66 Obs BYGG-rader fordelt på 16 samvirkelag. Kontroller navn, identifikatorer og raden `X Obs Bygg Larvik` før import. Ikke bland virkelige varehus med fiktive vurderinger.
-2. Avklar og opprett brukere med eksplisitt rolle og tilgang. Appen har samvirkelagsadministrator, driftssjef og varehussjef; den har ingen egen global systemadministratorrolle. Nye samvirkelag gir ikke automatisk tilgang til eksisterende administratorer.
-3. Konfigurer produksjonsegnet SMTP i Supabase Auth og verifiser invitasjon og passordgjenoppretting. Dagens midlertidige flyt lar administrator dele et selvvalgt passord direkte og bekrefter e-post uten egen verifisering. Den må erstattes eller sikres ytterligere før reell drift. Varsler ved publisering krever dessuten egen e-postleverandør og avsenderdomene.
-4. Skill pilotens Supabase-prosjekt og Vercel-miljø fra demodata. Gå gjennom redirect-URL-er, hemmeligheter, åpne registreringer og filtilgang før brukerne inviteres.
-5. Kjør en ende-til-ende-prøve med representative roller: opprett kladd, last opp bilder, publiser, les som varehussjef, korriger, last ned PDF og trekk tilbake tilgang. Test på faktiske iPhone- og Android-enheter og ved ustabilt nett.
+1. Gjennomfør en ekte test i Tønsberg med bilder fra mobil: kladd, publisering, oppgave, svar, PDF, PowerPoint og sletting. Kontroller resultatet på iPhone og Android, også ved svak dekning.
+2. Sett opp SMTP for Supabase Auth, e-post for publiseringsvarsler og en trygg prosess for passordgjenoppretting. Nå setter administrator et midlertidig passord manuelt, og `/onsker-tilgang` åpner brukerens e-postprogram uten å lagre en sak.
+3. Verifiser cron-jobben og Vercel-planen. Jobben er konfigurert hvert tiende minutt; frekvensen må støttes av valgt plan eller en egen jobbkjører.
+4. Kontroller RLS og tilordning med representative driftssjef- og varehussjefkontoer, særlig driftssjefer med utvalgte varehus.
+5. Avklar databehandleravtaler, lagringstid og sikkerhetskopi for både database og bilder. Test gjenoppretting før ordinær lansering.
+6. Kvalitetssikre teksten i vurderingskriteriene mot originaldokumentet. Avklar offisiell visuell profil og eventuelle merkevareelementer.
 
-## Før ordinær lansering
-
-- Kvalitetssikre transkripsjonen av originalkriteriene og avklare månedlige driftskriterier, visuell profil og eventuelle offisielle merkevareelementer.
-- Avklar databehandleravtaler, europeisk datalagring, oppbevaring/sletting og kostnadsplan. Sett opp backup av både database og Storage, og gjennomfør en gjenopprettingstest.
-- Verifiser bakgrunnsjobber og varselutsending på valgt Vercel-plan. `vercel.json` ber om jobb hvert tiende minutt; dette må passe plan og driftsoppsett. Kontroller feilhåndtering og varsler ved jobbfeil.
-- Gjennomfør brukerakseptanse, tilgjengelighetskontroll, ytelsestest med faktisk datamengde og sikkerhetsgjennomgang av roller, RLS, API og private filer.
-- Ta stilling til kjente begrensninger: HEIC/HEIF støttes ikke direkte, bildeopplasting har ingen egen miniatyrfil, PDF erstatter foreløpig enkelte Unicode-tegn, og arkiverte PDF-jobber for runde-/periodeoppsummering og store samleeksporter er ikke ferdige.
-
-Ingen av disse punktene hindrer en demonstrasjon med fiktive data. Pilot med virkelige ansatte og varehus bør starte først når de fem pilotpunktene er gjennomført.
+Store samleeksporter som egen nedlastbar fil, automatiske miniatyrbilder og full Unicode-støtte i PDF er ikke ferdigstilt. Nåværende rapportoversikter henter inntil 500 rapporter og bør pagineres i databasen når datamengden vokser.
