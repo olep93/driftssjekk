@@ -6,8 +6,8 @@ type Tool = "circle" | "pen" | "highlight";
 type Point = { x: number; y: number };
 type Stroke = { tool: Tool; points: Point[] };
 
-export default function ImageMarker({ file, onSave, onCancel }: {
-  file: File; onSave: (blob: Blob, caption: string) => Promise<void>; onCancel: () => void;
+export default function ImageMarker({ file, initialCaption = "", editing = false, onSave, onCancel }: {
+  file: File; initialCaption?: string; editing?: boolean; onSave: (blob: Blob, caption: string) => Promise<void>; onCancel: () => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imageRef = useRef<ImageBitmap | null>(null);
@@ -18,7 +18,7 @@ export default function ImageMarker({ file, onSave, onCancel }: {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [count, setCount] = useState(0);
-  const [caption, setCaption] = useState("");
+  const [caption, setCaption] = useState(initialCaption);
 
   function paint() {
     const canvas = canvasRef.current, image = imageRef.current;
@@ -76,8 +76,8 @@ export default function ImageMarker({ file, onSave, onCancel }: {
     } catch (issue) {setError(issue instanceof Error?issue.message:"Kunne ikke lagre bildet");}
     finally {setBusy(false);}
   }
-  return <div className="image-marker-backdrop" role="presentation"><section className="image-marker-dialog" role="dialog" aria-modal="true" aria-label="Marker bildet">
-    <div className="image-marker-header"><div><h2>Marker bildet</h2><p className="muted small">Tegn på bildet før det lagres i rapporten. Merkingen vises også i PDF og PowerPoint.</p></div><button type="button" className="button" onClick={onCancel} disabled={busy}>Lukk</button></div>
+  return <div className="image-marker-backdrop" role="presentation"><section className="image-marker-dialog" role="dialog" aria-modal="true" aria-label={editing ? "Rediger bilde" : "Marker bildet"}>
+    <div className="image-marker-header"><div><h2>{editing ? "Rediger bilde" : "Marker bildet"}</h2><p className="muted small">{editing ? "Legg til markeringer på bildet. Tidligere markeringer beholdes." : "Tegn på bildet før det lagres i rapporten."} Merkingen vises også i PDF og PowerPoint.</p></div><button type="button" className="button" onClick={onCancel} disabled={busy}>Lukk</button></div>
     <div className="image-marker-tools" role="toolbar" aria-label="Tegneverktøy">
       <button type="button" className={`button ${tool==="circle"?"primary":""}`} onClick={()=>setTool("circle")}>Rød sirkel</button>
       <button type="button" className={`button ${tool==="pen"?"primary":""}`} onClick={()=>setTool("pen")}>Rød penn</button>
@@ -90,7 +90,7 @@ export default function ImageMarker({ file, onSave, onCancel }: {
       onPointerMove={(event)=>{if(!activeRef.current)return;activeRef.current.points.push(point(event));paint();}}
       onPointerUp={end} onPointerCancel={end}/></div>
     <label className="field image-marker-caption">Bildetekst (valgfritt)<textarea value={caption} onChange={(event)=>setCaption(event.target.value)} maxLength={1000} rows={2} placeholder="Hva vil du vise med dette bildet?"/></label>
-    <p className="muted small image-marker-caption-hint">Du kan også legge til eller endre bildeteksten etter opplasting.</p>
+    <p className="muted small image-marker-caption-hint">Du kan også legge til eller endre bildeteksten direkte fra bildekortet.</p>
     {error&&<p className="feedback error" role="alert">{error}</p>}
     <div className="page-actions" style={{justifyContent:"flex-end"}}><button type="button" className="button" onClick={onCancel} disabled={busy}>Avbryt</button><button type="button" className="button primary" onClick={()=>void save()} disabled={!ready||busy}>{busy?"Lagrer …":"Lagre bilde"}</button></div>
   </section></div>;

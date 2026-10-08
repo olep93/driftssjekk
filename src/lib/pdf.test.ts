@@ -19,22 +19,22 @@ describe("rapport-PDF",()=>{
     const bytes=await buildReportPdf(snapshot,{} as SupabaseClient);
     if (process.env.PDF_VISUAL_QA === "1") { mkdirSync("tmp/pdfs",{recursive:true}); writeFileSync("tmp/pdfs/qa-maanedlig.pdf",bytes); }
     const pdf=await PDFDocument.load(bytes);
-    expect(pdf.getPageCount()).toBe(1);
+    expect(pdf.getPageCount()).toBe(5); // Cover plus one page per area.
   });
   it("holder alle vurderingskriteriene på én vedleggsside i en kort rapport",async()=>{
     const snapshot={kind:"inspection",store_name:"Tønsberg",cooperative_name:"Coop Sørøst",round_title:null,visit_date:"2026-10-08",assessor_name:"Testkonto",summary:"Kort oppsummering",total:6,version_no:1,areas:["drive_in","store","outdoor","goods_receiving"].map((key)=>({key,score_quarters:24,comment:"Kort observasjon.",needs_follow_up:false,images:[]}))};
     const pdf=await PDFDocument.load(await buildReportPdf(snapshot,{} as SupabaseClient));
-    expect(pdf.getPageCount()).toBe(2);
+    expect(pdf.getPageCount()).toBe(6); // Cover, four areas, criteria.
   });
   it("lager samlingens konseptrunde med kriterievedlegg",async()=>{
     const snapshot={kind:"event_check",store_name:"Obs Bygg Sandefjord",cooperative_name:"Coop Sørøst",round_title:"Felles samling i Sandefjord",visit_date:"2026-10-08",assessor_name:"Varehussjef",summary:"Felles vurdering",total:7,version_no:1,areas:["drive_in","store","outdoor","goods_receiving"].map((key)=>({key,score_quarters:28,comment:"Kort observasjon.",needs_follow_up:false,images:[]}))};
     const pdf=await PDFDocument.load(await buildReportPdf(snapshot,{} as SupabaseClient));
-    expect(pdf.getPageCount()).toBe(2);
+    expect(pdf.getPageCount()).toBe(6);
   });
   it("lager en delvurdering med bare tildelt område",async()=>{
     const snapshot={kind:"event_check",store_name:"Obs Bygg Sandefjord",cooperative_name:"Coop Sørøst",round_title:"Felles besøk",visit_date:"2026-10-08",assessor_name:"Varehussjef",summary:"Vurdering av butikk",total:7,version_no:1,areas:[{key:"store",score_quarters:28,comment:"Ryddig butikk",needs_follow_up:false,images:[]}]};
     const pdf=await PDFDocument.load(await buildReportPdf(snapshot,{} as SupabaseClient));
-    expect(pdf.getPageCount()).toBe(2);
+    expect(pdf.getPageCount()).toBe(3); // Cover, assigned area, criteria.
   });
   it("plasserer stående og liggende bilder i PDF-en",async()=>{
     const landscape=await sharp({create:{width:1200,height:760,channels:3,background:"#55758b"}}).jpeg().toBuffer();

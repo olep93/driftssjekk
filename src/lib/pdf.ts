@@ -7,7 +7,7 @@ import { reportKindLabelUpper } from "./report-kind";
 
 type Snapshot = { kind:string;store_name:string;cooperative_name:string;round_title:string|null;visit_date:string;assessor_name:string;summary:string;total:number|null;version_no:number;areas:{key:string;score_quarters:number|null;comment:string;needs_follow_up:boolean;images:{path:string;caption:string}[]}[] };
 const navy=rgb(.07,.15,.25),orange=rgb(.91,.46,.15),muted=rgb(.39,.45,.52),line=rgb(.86,.89,.91),red=rgb(.64,.26,.24),green=rgb(.13,.42,.31);
-export const reportPdfTemplateVersion = "editorial-20261008";
+export const reportPdfTemplateVersion = "area-flow-20261008";
 export function reportPdfPath(versionId:string){return `reports/${versionId}-${reportPdfTemplateVersion}.pdf`;}
 function printable(value:string){return value.replace(/[–—−]/g,"-").replace(/[“”]/g,'"').replace(/[’]/g,"'").replace(/[^\u0020-\u00ff\n]/g,"?");}
 function conceptColor(value:number|null){const band=conceptBand(value);return band==="below"?red:band==="above"?green:navy;}
@@ -35,7 +35,7 @@ export async function buildReportPdf(snapshot:Snapshot,supabase:SupabaseClient):
   const partialEvent=snapshot.kind==="event_check"&&snapshot.areas.length<4;
   const width=595.28,height=841.89,margin=47,contentWidth=width-2*margin;
   let page:PDFPage=pdf.addPage([width,height]);let y:number=height-margin;
-  function newPage(){page=pdf.addPage([width,height]);y=height-margin;page.drawRectangle({x:0,y:height-10,width,height:10,color:navy});page.drawText(printable(snapshot.store_name).slice(0,70),{x:margin,y,size:9,font:bold,color:muted});y-=26;}
+  function newPage(){page=pdf.addPage([width,height]);y=height-margin;page.drawRectangle({x:0,y:height-10,width,height:10,color:navy});page.drawRectangle({x:0,y:height-10,width:150,height:10,color:orange});page.drawText(printable(snapshot.store_name).slice(0,70),{x:margin,y,size:9,font:bold,color:muted});y-=26;}
   function room(needed:number){if(y-needed<margin+26)newPage();}
   function text(value:string,size=10,font:PDFFont=regular,color=navy,space=14){
     for(const lineText of splitLines(value,font,size,contentWidth)){room(space);if(lineText)page.drawText(lineText,{x:margin,y,size,font,color});y-=space;}
@@ -55,14 +55,25 @@ export async function buildReportPdf(snapshot:Snapshot,supabase:SupabaseClient):
   text(`Vurderer: ${snapshot.assessor_name||"Ukjent"}`,10,regular,muted,20);
   text("Oppsummering",14,bold,navy,23);
   text(snapshot.summary||"Ingen samlet kommentar.",10,regular,navy,14);y-=12;
+  let areaNumber=0;
   for(const area of areas){
     const a=snapshot.areas.find((item)=>item.key===area.key);if(!a)continue;
-    room(55);page.drawLine({start:{x:margin,y},end:{x:width-margin,y},thickness:1,color:line});y-=24;
-    page.drawText(area.label,{x:margin,y,size:15,font:bold,color:navy});
+    areaNumber++;
+    newPage();
+    page.drawText(`OMRÅDE ${String(areaNumber).padStart(2,"0")} / ${snapshot.areas.length}`,{x:margin,y,size:9,font:bold,color:orange});y-=32;
+    page.drawText(area.label,{x:margin,y,size:26,font:bold,color:navy});y-=25;
+    page.drawLine({start:{x:margin,y},end:{x:width-margin,y},thickness:1.2,color:line});y-=20;
     const score=a.score_quarters==null?null:a.score_quarters/4;
-    page.drawText(formatScore(score),{x:width-margin-(score==null?96:55),y,size:score==null?10:15,font:bold,color:snapshot.kind!=="self_check"?conceptColor(score):navy});y-=25;
-    if(a.needs_follow_up)text("Krever oppfølging",9,bold,orange,17);
-    text(a.comment||"Ingen kommentar.",10,regular,navy,14);y-=8;
+    page.drawRectangle({x:margin,y:y-66,width:contentWidth,height:72,color:rgb(.96,.97,.98)});
+    page.drawRectangle({x:margin,y:y-66,width:4,height:72,color:snapshot.kind!=="self_check"?conceptColor(score):navy});
+    page.drawText("KARAKTER",{x:margin+18,y:y-15,size:9,font:bold,color:muted});
+    page.drawText(formatScore(score),{x:margin+18,y:y-49,size:27,font:bold,color:snapshot.kind!=="self_check"?conceptColor(score):navy});
+    if(snapshot.kind!=="self_check")page.drawText(printable(conceptLabel(score)),{x:margin+160,y:y-46,size:12,font:bold,color:conceptColor(score)});
+    if(a.needs_follow_up)page.drawText("KREVER OPPFØLGING",{x:width-margin-145,y:y-15,size:8,font:bold,color:orange});
+    y-=92;
+    page.drawText("VURDERING",{x:margin,y,size:9,font:bold,color:muted});y-=20;
+    text(a.comment||"Ingen kommentar.",11,regular,navy,16);y-=20;
+    if(a.images.length){room(30);page.drawText(`BILDER / ${a.images.length}`,{x:margin,y,size:9,font:bold,color:muted});y-=20;}
     for(const image of a.images){
       try{
         const {data,error}=await supabase.storage.from("report-images").download(image.path);
@@ -75,7 +86,10 @@ export async function buildReportPdf(snapshot:Snapshot,supabase:SupabaseClient):
         const maxHeight=portrait?330:260;
         const imageWidth=embedded.width*Math.min(contentWidth/embedded.width,maxHeight/embedded.height);
         const imageHeight=embedded.height*Math.min(contentWidth/embedded.width,maxHeight/embedded.height);
-        room(imageHeight+48);
+        if(y-imageHeight-48<margin+26){
+          newPage();
+          page.drawText(printable(`${area.label} / BILDER (FORTS.)`),{x:margin,y,size:14,font:bold,color:navy});y-=32;
+        }
         page.drawRectangle({x:margin,y:y-imageHeight-12,width:contentWidth,height:imageHeight+24,color:rgb(.96,.97,.98)});
         page.drawImage(embedded,{x:margin+(contentWidth-imageWidth)/2,y:y-imageHeight,width:imageWidth,height:imageHeight});
         y-=imageHeight+23;

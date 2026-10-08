@@ -27,7 +27,7 @@ export default async function EditReport({ params }: { params: Promise<{ version
   ]);
   const images = await Promise.all((imageRows || []).map(async (image) => {
     const { data } = await ctx.supabase.storage.from("report-images").createSignedUrl(image.object_path, 300);
-    return { id:image.id, area_key:image.area_key, caption:image.caption, url:data?.signedUrl || "" };
+    return { id:image.id, area_key:image.area_key, caption:image.caption, path:image.object_path, url:data?.signedUrl || "" };
   }));
   return <><div className="breadcrumb"><Link href={report.event_id ? `/samlinger/${report.event_id}` : "/rapporter"}>{report.event_id ? "Samling" : "Rapporter"}</Link> / Kladd / {store?.name}</div><PageHeading eyebrow={reportKindLabel(report.kind,report.event_id)} title={store?.name || "Rapport"} description={version.version_no > 1 ? `Korrigering · versjon ${version.version_no}` : report.event_id ? "Vurder de fire konseptområdene. Resultatet holdes utenfor den offisielle rangeringen." : report.kind === "inspection" ? "Vurder de fire områdene og publiser når de er klare." : "Vurder de fire områdene. Karakterene brukes til intern progresjon, utenfor konseptrangeringen."}/><Editor version={version as Version} report={report as Report} assessments={(assessmentRows || []) as Area[]} images={images} canDelete={ctx.systemAdmin}/></>;
 }

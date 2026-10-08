@@ -15,7 +15,7 @@ export async function GET(_request: Request, { params }: { params: Promise<{ ver
   if (!version) return apiError("Rapporten finnes ikke eller du mangler tilgang",404);
   const images = await Promise.all((imageRows || []).map(async (image) => {
     const {data} = await auth.supabase.storage.from("report-images").createSignedUrl(image.object_path,300);
-    return {id:image.id,area_key:image.area_key,caption:image.caption,url:data?.signedUrl || ""};
+    return {id:image.id,area_key:image.area_key,caption:image.caption,path:image.object_path,url:data?.signedUrl || ""};
   }));
   return NextResponse.json({state:version.state,lockVersion:version.lock_version,updatedAt:version.updated_at,
     fields:{visitDate:version.visit_date || "",summary:version.summary || "",areas:Object.fromEntries(areas.map((area) => {

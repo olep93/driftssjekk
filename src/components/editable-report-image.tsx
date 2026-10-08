@@ -4,12 +4,13 @@
 
 import { useState } from "react";
 
-export type EditableImageInfo = { id: string; area_key: string; caption: string; url: string };
+export type EditableImageInfo = { id: string; area_key: string; caption: string; url: string; path: string };
 
-export default function EditableReportImage({ image, areaLabel, onSaved, onRemove }: {
+export default function EditableReportImage({ image, areaLabel, onSaved, onEditImage, onRemove }: {
   image: EditableImageInfo;
   areaLabel: string;
   onSaved: (id: string, caption: string) => void;
+  onEditImage: (image: EditableImageInfo) => void;
   onRemove: (id: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
@@ -58,7 +59,8 @@ export default function EditableReportImage({ image, areaLabel, onSaved, onRemov
     </form> : <>
       <p className={image.caption ? "image-caption" : "image-caption muted"}>{image.caption || "Ingen bildetekst"}</p>
       <div className="image-item-actions">
-        <button type="button" className="text-button" onClick={beginEditing}>{image.caption ? "Endre tekst" : "Legg til tekst"}</button>
+        <button type="button" className="text-button" onClick={() => onEditImage(image)}>Rediger bilde</button>
+        <button type="button" className="text-button" onClick={beginEditing}>{image.caption ? "Rediger tekst" : "Legg til tekst"}</button>
         <button type="button" className="text-button" onClick={() => onRemove(image.id)}>Fjern</button>
       </div>
     </>}

@@ -8,7 +8,7 @@ import { reportKindLabel } from "./report-kind";
 type Snapshot = { kind:string;store_name:string;cooperative_name:string;round_title:string|null;visit_date:string;assessor_name:string;summary:string;total:number|null;version_no:number;areas:{key:string;score_quarters:number|null;comment:string;needs_follow_up:boolean;images:{path:string;caption:string}[]}[] };
 const navy="142B43", orange="D66B28", green="236A4F", red="AD4944", muted="68788A", line="DCE4EB";
 const width=13.333;
-export const reportPptxTemplateVersion="editorial-20261008";
+export const reportPptxTemplateVersion="area-flow-20261008";
 export function reportPptxPath(versionId:string){return `reports/${versionId}-${reportPptxTemplateVersion}.pptx`;}
 function bandColor(score:number|null){return conceptBand(score)==="below"?red:conceptBand(score)==="above"?green:navy;}
 function clean(value:string){return value.replace(/[\u0000-\u001f]/g," ").trim();}
@@ -42,21 +42,24 @@ export async function buildReportPptx(snapshot:Snapshot,supabase:SupabaseClient)
   if(summarySlides.length===1&&clean(snapshot.summary).length<=280){const s=summarySlides[0];s.addText("RESULTAT PER OMRÅDE",{x:.75,y:4.57,w:11,h:.25,fontFace:"Arial",fontSize:11,bold:true,color:muted,margin:0});
     reportAreas.forEach((area,index)=>{const assessment=snapshot.areas.find((item)=>item.key===area.key),score=assessment?.score_quarters==null?null:assessment.score_quarters/4,x=.75+index*3.12;s.addShape(pptx.ShapeType.rect,{x,y:4.95,w:2.94,h:1.05,line:{color:line,width:1},fill:{color:"F7F9FB"}});s.addText(area.label,{x:x+.17,y:5.12,w:2.6,h:.24,fontFace:"Arial",fontSize:11,bold:true,color:muted,margin:0});s.addText(formatScore(score),{x:x+.17,y:5.43,w:2.6,h:.37,fontFace:"Arial",fontSize:score==null?13:22,bold:true,color:snapshot.kind!=="self_check"?bandColor(score):navy,margin:0});});
   }
-  const compactAreas=reportAreas.every((area)=>{const assessment=snapshot.areas.find((item)=>item.key===area.key);return !assessment?.needs_follow_up&&clean(assessment?.comment||"").length<=110;});
-  const areaBatch=compactAreas?4:2;
-  for(let offset=0;offset<reportAreas.length;offset+=areaBatch){const s=slide("Områdevurderinger",`${kind} · ${formatDate(snapshot.visit_date)}`);
-    for(const [index,area] of reportAreas.slice(offset,offset+areaBatch).entries()){const assessment=snapshot.areas.find((item)=>item.key===area.key),score=assessment?.score_quarters==null?null:assessment.score_quarters/4,y=compactAreas?1.58+index*1.28:1.62+index*2.55;
-      s.addShape(pptx.ShapeType.rect,{x:.74,y,w:11.85,h:compactAreas?1.16:2.34,line:{color:line,width:1},fill:{color:"F9FBFC"}});
-      s.addText(area.label,{x:1.02,y:y+(compactAreas ? .16 : .23),w:7.7,h:.4,fontFace:"Arial",fontSize:compactAreas?16:19,bold:true,color:navy,margin:0});
-      s.addText(formatScore(score),{x:9.15,y:y+(compactAreas ? .16 : .23),w:3.15,h:.4,fontFace:"Arial",fontSize:score==null?16:(compactAreas?20:24),bold:true,color:snapshot.kind!=="self_check"?bandColor(score):navy,align:"right",margin:0});
-      if(assessment?.needs_follow_up)s.addText("Krever oppfølging",{x:1.02,y:y+.7,w:5,h:.25,fontFace:"Arial",fontSize:11,bold:true,color:orange,margin:0});
-      const commentPieces=pieces(assessment?.comment||"Ingen kommentar.",compactAreas?110:260);
-      s.addText(commentPieces[0],{x:1.02,y:y+(compactAreas ? .62 : assessment?.needs_follow_up ? .99 : .84),w:11.1,h:compactAreas ? .42 : 1.18,fontFace:"Arial",fontSize:compactAreas?13.5:16,color:navy,margin:0,fit:"shrink",valign:"top"});
-      if(commentPieces.length>1)paragraphSlides(`${area.label} · kommentar`,commentPieces.slice(1));
-    }
-    footer(s);
-  }
-  for(const area of reportAreas){const assessment=snapshot.areas.find((item)=>item.key===area.key);if(!assessment)continue;
+  for(const [areaIndex,area] of reportAreas.entries()){
+    const assessment=snapshot.areas.find((item)=>item.key===area.key);
+    if(!assessment)continue;
+    const score=assessment.score_quarters==null?null:assessment.score_quarters/4;
+    const areaSlide=slide(area.label,`OMRÅDE ${String(areaIndex+1).padStart(2,"0")} / ${reportAreas.length}   ·   ${kind}`);
+    areaSlide.addShape(pptx.ShapeType.rect,{x:.75,y:1.57,w:3.28,h:4.98,line:{color:line,width:1},fill:{color:"F4F7FA"}});
+    areaSlide.addShape(pptx.ShapeType.rect,{x:.75,y:1.57,w:.075,h:4.98,line:{color:snapshot.kind!=="self_check"?bandColor(score):navy},fill:{color:snapshot.kind!=="self_check"?bandColor(score):navy}});
+    areaSlide.addText("KARAKTER",{x:1.08,y:1.94,w:2.55,h:.29,fontFace:"Arial",fontSize:11,bold:true,charSpacing:1.5,color:muted,margin:0});
+    areaSlide.addText(formatScore(score),{x:1.04,y:2.43,w:2.7,h:1.22,fontFace:"Arial",fontSize:score==null?26:65,bold:true,color:snapshot.kind!=="self_check"?bandColor(score):navy,margin:0,fit:"shrink"});
+    if(snapshot.kind!=="self_check")areaSlide.addText(conceptLabel(score),{x:1.09,y:3.86,w:2.58,h:.55,fontFace:"Arial",fontSize:16,bold:true,color:bandColor(score),margin:0,fit:"shrink"});
+    if(assessment.needs_follow_up)areaSlide.addText("KREVER OPPFØLGING",{x:1.09,y:5.72,w:2.6,h:.34,fontFace:"Arial",fontSize:10,bold:true,color:orange,margin:0});
+    areaSlide.addText("VURDERING",{x:4.48,y:1.78,w:7.82,h:.31,fontFace:"Arial",fontSize:11,bold:true,charSpacing:1.3,color:muted,margin:0});
+    const commentChunks=pieces(assessment.comment||"Ingen kommentar.",510);
+    areaSlide.addText(commentChunks[0],{x:4.47,y:2.25,w:7.58,h:3.93,fontFace:"Arial",fontSize:20,color:navy,margin:0,breakLine:false,fit:"shrink",valign:"top"});
+    areaSlide.addShape(pptx.ShapeType.line,{x:4.47,y:6.31,w:7.84,h:0,line:{color:line,width:1}});
+    areaSlide.addText(`${assessment.images.length} ${assessment.images.length===1?"bilde":"bilder"} fra området`,{x:4.47,y:6.45,w:7.8,h:.25,fontFace:"Arial",fontSize:11,color:muted,margin:0});
+    footer(areaSlide);
+    if(commentChunks.length>1)paragraphSlides(`${area.label} · vurdering`,commentChunks.slice(1),`OMRÅDE ${String(areaIndex+1).padStart(2,"0")} / ${reportAreas.length}`);
     for(const [index,image] of assessment.images.entries()){
       const photoSlide=slide(area.label,`Dokumentasjon · bilde ${index+1} av ${assessment.images.length}`);
       try{
