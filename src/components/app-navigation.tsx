@@ -11,7 +11,7 @@ function createLinks({ operations, monthly, admin, storeId }: Permissions) {
   const store = storeId ? `&store=${encodeURIComponent(storeId)}` : "";
   return [
     ...(operations ? [{ href: `/rapporter/ny?type=inspection${store}`, label: "Uanmeldt konseptsjekk", detail: "Vurder et varehus", icon: ClipboardList }] : []),
-    ...(monthly ? [{ href: `/rapporter/ny?type=self_check${store}`, label: "Månedlig driftsgjennomgang", detail: "Registrer observasjoner uten karakter", icon: FileText }] : []),
+    ...(monthly ? [{ href: `/rapporter/ny?type=self_check${store}`, label: "Månedlig driftsgjennomgang", detail: "Vurder varehuset for intern progresjon", icon: FileText }] : []),
     ...(operations && !storeId ? [{ href: "/runder/ny", label: "Konseptsjekkrunde", detail: "Planlegg flere varehusbesøk", icon: Plus }] : []),
     ...(admin && !storeId ? [{ href: "/administrasjon", label: "Ny bruker", detail: "Opprett bruker og tildel tilgang", icon: UserPlus }] : []),
   ];

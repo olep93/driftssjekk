@@ -5,7 +5,7 @@ Intern webapp for uanmeldte konseptsjekker og månedlige driftsgjennomganger i v
 ## Kort om løsningen
 
 - Fire områder: Drive-In, Butikk, Uteområde og Varemottak. Hvert område får 1,00–10,00 i kvartsteg. Totalen er summen av `score_quarters` delt på 16. Bare visningen avrundes.
-- Uanmeldte konseptsjekker får karakter. Månedlig driftsgjennomgang lagrer observasjoner og bilder uten konseptkarakter. Bare publiserte konseptsjekker i en runde inngår i rangering.
+- Begge rapporttypene får karakter per område og en samlet karakter. Månedlige driftskarakterer brukes til intern progresjon. Bare uanmeldte konseptsjekker inngår i konseptrangering og grunnlaget for årets varehus.
 - Roller er eksplisitte per samvirkelag eller varehus. E-postdomene gir ingen tilgang. Publiserte versjoner og øyeblikksbilder er uforanderlige.
 - I testmiljøet oppretter samvirkelagsadministrator brukere med et midlertidig passord og velger samvirkelag, rolle og eventuelt varehus. Brukeren må velge nytt passord ved første innlogging. Siden `/onsker-tilgang` åpner en e-postforespørsel som brukeren selv sender; den oppretter ikke konto eller en lagret sak.
 - Databasen håndhever rettigheter og sentrale overganger via RLS og `SECURITY DEFINER`-funksjoner. Frontend og API er ikke eneste tilgangssperre.
@@ -59,7 +59,7 @@ pnpm test
 pnpm build
 ```
 
-SQL-migrasjonene kan syntakssjekkes med PostgreSQL-parser, men må også kjøres mot en ekte Supabase-instans. PDF-testen dekker flersidig A4, lange kommentarer, norske tegn og månedlig rapport uten karakter. PowerPoint-testen kontrollerer en åpnebar presentasjon med kriterier. Bruk `PDF_VISUAL_QA=1 pnpm test` for å skrive en midlertidig QA-PDF under `tmp/pdfs/`; den er ikke et publisert rapportarkiv.
+SQL-migrasjonene kan syntakssjekkes med PostgreSQL-parser, men må også kjøres mot en ekte Supabase-instans. PDF-testen dekker flersidig A4, lange kommentarer, norske tegn og månedlig rapport med driftskarakter. PowerPoint-testene kontrollerer både konseptsjekk og månedlig gjennomgang. Bruk `PDF_VISUAL_QA=1 pnpm test` for å skrive en midlertidig QA-PDF under `tmp/pdfs/`; den er ikke et publisert rapportarkiv.
 
 Sist kontrollert 8. oktober 2026: typekontroll, lint og produksjonsbygg besto. Migrasjoner er kjørt i et eget Supabase-demoprosjekt med fiktive data, og RLS-tilgangstestene er kjørt der. Innlogging og rapport-PDF er prøvd mot Vercel-demoen. Dette bekrefter demomiljøet, ikke et ferdig produksjonsoppsett.
 

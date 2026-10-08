@@ -5,7 +5,7 @@ import { conceptBand, conceptLabel, criteriaSections } from "./criteria";
 
 type Snapshot = { kind:string;store_name:string;cooperative_name:string;round_title:string|null;visit_date:string;assessor_name:string;summary:string;total:number|null;version_no:number;areas:{key:string;score_quarters:number|null;comment:string;needs_follow_up:boolean;images:{path:string;caption:string}[]}[] };
 const navy=rgb(.07,.15,.25),orange=rgb(.91,.46,.15),muted=rgb(.39,.45,.52),line=rgb(.86,.89,.91),red=rgb(.64,.26,.24),green=rgb(.13,.42,.31);
-export const reportPdfTemplateVersion = "compact-criteria-20261008";
+export const reportPdfTemplateVersion = "monthly-scores-20261008";
 export function reportPdfPath(versionId:string){return `reports/${versionId}-${reportPdfTemplateVersion}.pdf`;}
 function printable(value:string){return value.replace(/[–—−]/g,"-").replace(/[“”]/g,'"').replace(/[’]/g,"'").replace(/[^\u0020-\u00ff\n]/g,"?");}
 function conceptColor(value:number|null){const band=conceptBand(value);return band==="below"?red:band==="above"?green:navy;}
@@ -42,10 +42,11 @@ export async function buildReportPdf(snapshot:Snapshot,supabase:SupabaseClient):
   text(snapshot.store_name,24,bold,navy,32);
   text(snapshot.cooperative_name+(snapshot.round_title?`  ·  ${snapshot.round_title}`:""),10,regular,muted,19);
   room(65);page.drawRectangle({x:margin,y:y-56,width:contentWidth,height:61,color:rgb(.96,.97,.98)});
-  page.drawText(snapshot.kind==="inspection"?"TOTALKARAKTER":"KONSEPTKARAKTER",{x:margin+15,y:y-15,size:9,font:bold,color:muted});
-  page.drawText(snapshot.kind==="inspection"?formatScore(snapshot.total):"Ikke gjeldende",{x:margin+15,y:y-43,size:snapshot.kind==="inspection"?25:18,font:bold,color:conceptColor(snapshot.total)});
+  page.drawText(snapshot.kind==="inspection"?"TOTALKARAKTER":"DRIFTSKARAKTER",{x:margin+15,y:y-15,size:9,font:bold,color:muted});
+  page.drawText(formatScore(snapshot.total),{x:margin+15,y:y-43,size:snapshot.total==null?18:25,font:bold,color:snapshot.kind==="inspection"?conceptColor(snapshot.total):navy});
   if(snapshot.kind==="inspection")page.drawText(printable(conceptLabel(snapshot.total)),{x:margin+96,y:y-43,size:10,font:bold,color:conceptColor(snapshot.total)});
-  page.drawText(`Besøk ${formatDate(snapshot.visit_date)}  ·  Versjon ${snapshot.version_no}`,{x:margin+190,y:y-36,size:10,font:regular,color:muted});y-=83;
+  else page.drawText("Intern progresjon",{x:margin+115,y:y-43,size:10,font:bold,color:navy});
+  page.drawText(`Besøk ${formatDate(snapshot.visit_date)}  ·  Versjon ${snapshot.version_no}`,{x:margin+290,y:y-36,size:10,font:regular,color:muted});y-=83;
   text(`Vurderer: ${snapshot.assessor_name||"Ukjent"}`,10,regular,muted,20);
   text("Oppsummering",14,bold,navy,23);
   text(snapshot.summary||"Ingen samlet kommentar.",10,regular,navy,14);y-=12;
@@ -54,7 +55,7 @@ export async function buildReportPdf(snapshot:Snapshot,supabase:SupabaseClient):
     room(55);page.drawLine({start:{x:margin,y},end:{x:width-margin,y},thickness:1,color:line});y-=24;
     page.drawText(area.label,{x:margin,y,size:15,font:bold,color:navy});
     const score=a.score_quarters==null?null:a.score_quarters/4;
-    page.drawText(snapshot.kind==="inspection"?formatScore(score):"Ikke gjeldende",{x:width-margin-(snapshot.kind==="inspection"?55:86),y,size:snapshot.kind==="inspection"?15:10,font:bold,color:conceptColor(score)});y-=25;
+    page.drawText(formatScore(score),{x:width-margin-(score==null?96:55),y,size:score==null?10:15,font:bold,color:snapshot.kind==="inspection"?conceptColor(score):navy});y-=25;
     if(a.needs_follow_up)text("Krever oppfølging",9,bold,orange,17);
     text(a.comment||"Ingen kommentar.",10,regular,navy,14);y-=8;
     for(const image of a.images){
