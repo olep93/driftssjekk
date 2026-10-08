@@ -151,6 +151,6 @@ export function DemoClient() {
         </section>)}</div><aside className="demo-summary-card"><h2>Samlet karakter</h2><div className="demo-summary-score">{formatScore(draftTotal)}<span> / 10</span></div><div className="demo-summary-list">{areas.map((area, index) => <div key={area.key}><span>{area.label}</span><strong>{formatScore(draftScores[index] / 4)}</strong></div>)}</div><Link className="button primary" href="/login" style={{width:"100%",marginTop:20}}>Logg inn og lagre rapport</Link><button className="button demo-reset-button" onClick={resetDemo}><RotateCcw size={15}/> Start på nytt</button></aside></div>
       </>}
     </main>
-    <nav className="mobile-nav" aria-label="Prøvedemo mobil">{nav.map((item) => <button key={item.id} className={view === item.id ? "selected" : ""} onClick={() => switchView(item.id)}><item.icon size={17} strokeWidth={1.8} aria-hidden="true"/>{item.label}</button>)}</nav>
+    <nav className="mobile-nav demo-mobile-nav" aria-label="Prøvedemo mobil">{nav.map((item) => <button key={item.id} className={view === item.id ? "selected" : ""} onClick={() => switchView(item.id)}><item.icon size={17} strokeWidth={1.8} aria-hidden="true"/>{item.id === "runder" ? "Runder" : item.id === "vurdering" ? "Prøv sjekk" : item.label}</button>)}</nav>
   </div>;
 }
