@@ -8,8 +8,8 @@ type Store = { id: string; name: string; cooperative_id: string; active: boolean
 type Membership = { id: string; user_id: string; cooperative_id: string; store_id: string | null; role: string };
 type Profile = { id: string; display_name: string };
 
-export default function AdminControls({ coops, stores, memberships, profiles }: {
-  coops: Coop[]; stores: Store[]; memberships: Membership[]; profiles: Profile[];
+export default function AdminControls({ coops, stores, memberships, profiles, systemAdmin }: {
+  coops: Coop[]; stores: Store[]; memberships: Membership[]; profiles: Profile[]; systemAdmin: boolean;
 }) {
   const router = useRouter();
   const [coop, setCoop] = useState(coops.find((item) => item.name === "Coop Sørøst")?.id || coops[0]?.id || "");
@@ -25,6 +25,10 @@ export default function AdminControls({ coops, stores, memberships, profiles }: 
   const [selectedStores, setSelectedStores] = useState<string[]>([]);
   const [message, setMessage] = useState("");
   const [busy, setBusy] = useState(false);
+  const [resetEmail, setResetEmail] = useState("");
+  const [resetPassword, setResetPassword] = useState("");
+  const [resetBusy, setResetBusy] = useState(false);
+  const [resetMessage, setResetMessage] = useState("");
 
   async function createStore(event: React.FormEvent) {
     event.preventDefault(); setBusy(true); setMessage("");
@@ -63,6 +67,24 @@ export default function AdminControls({ coops, stores, memberships, profiles }: 
     const result = await response.json();
     setMessage(response.ok ? "Tilgangen er fjernet." : result.error || "Kunne ikke fjerne tilgang.");
     if (response.ok) router.refresh();
+  }
+
+  async function resetUserPassword(event: React.FormEvent) {
+    event.preventDefault();
+    const address = resetEmail.trim().toLowerCase();
+    if (!confirm(`Tilbakestille passordet for ${address}? Brukeren må velge nytt passord ved neste innlogging.`)) return;
+    setResetBusy(true); setResetMessage("");
+    try {
+      const response = await fetch("/api/admin/reset-password", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: address, password: resetPassword }) });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || "Kunne ikke tilbakestille passordet.");
+      setResetMessage(result.auditWarning
+        ? "Passordet er tilbakestilt, men hendelsen kunne ikke loggføres. Kontakt teknisk ansvarlig."
+        : "Passordet er tilbakestilt. Del det midlertidige passordet direkte med brukeren. Brukeren må velge nytt passord ved innlogging.");
+      setResetPassword("");
+    } catch (issue) { setResetMessage(issue instanceof Error ? issue.message : "Kunne ikke kontakte serveren."); }
+    finally { setResetBusy(false); }
   }
 
   return <>
@@ -109,6 +131,15 @@ export default function AdminControls({ coops, stores, memberships, profiles }: 
       </section>
     </div>
     {message && <p role="status" className="feedback">{message}</p>}
+    {systemAdmin && <section className="panel"><h2>Tilbakestill brukerpassord</h2>
+      <p className="muted small">Du setter et nytt midlertidig passord. Ingen e-post sendes fra systemet, og brukeren må velge sitt eget passord ved neste innlogging.</p>
+      <form className="form-stack" onSubmit={resetUserPassword}>
+        <label>Brukerens e-post<input type="email" required autoComplete="off" value={resetEmail} onChange={(event) => setResetEmail(event.target.value)} /></label>
+        <label>Nytt midlertidig passord<input type="password" required minLength={12} maxLength={128} autoComplete="new-password" value={resetPassword} onChange={(event) => setResetPassword(event.target.value)} /></label>
+        <button className="button primary" disabled={resetBusy}>{resetBusy ? "Tilbakestiller …" : "Tilbakestill passord"}</button>
+      </form>
+      {resetMessage && <p role="status" className="feedback" style={{marginTop:16}}>{resetMessage}</p>}
+    </section>}
     <section className="panel"><h2>Rolletildelinger</h2><div className="table-wrap"><table><thead><tr><th>Bruker</th><th>Rolle</th><th>Varehus</th><th></th></tr></thead><tbody>
       {memberships.filter((membership) => membership.cooperative_id === coop).map((membership) => <tr key={membership.id}>
         <td>{profiles.find((profile) => profile.id === membership.user_id)?.display_name || membership.user_id.slice(0, 8)}</td>

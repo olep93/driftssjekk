@@ -39,5 +39,6 @@ export default async function Administration() {
     stores={storesResult.data || []}
     memberships={membershipsResult.data || []}
     profiles={profiles || []}
+    systemAdmin={ctx.systemAdmin}
   /></>;
 }

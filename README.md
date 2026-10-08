@@ -7,7 +7,7 @@ Intern webapp for Obs Bygg. Løsningen har uanmeldte konseptsjekker, månedlige 
 - Begge rapporttyper får karakter 1–10 for Drive-In, Butikk, Uteområde og Varemottak. Karakter 6 er konsept. Bare uanmeldte konseptsjekker teller i konseptrangeringen; månedlige karakterer viser intern progresjon.
 - Vurderinger kan lagres som kladd, suppleres med bilder per område og publiseres. Publiserte versjoner er låst; korrigeringer får en ny versjon.
 - Driftssjefen kan gi en oppgave fra hvert område i en publisert rapport, med tekst, frist og et opplastet bilde eller et bilde fra rapporten. Varehuset ser oppgaven under **Oppfølging** og kan svare, endre status og laste opp bilde av løsningen.
-- Administrator velger samvirkelag, rolle og varehustilgang. Driftssjef kan ha hele samvirkelaget eller utvalgte varehus. Systemadministrator kan slette testrapporter og tomme runder.
+- Administrator velger samvirkelag, rolle og varehustilgang. Driftssjef kan ha hele samvirkelaget eller utvalgte varehus. Systemadministrator kan slette testrapporter og tomme runder, og tilbakestille brukerpassord med et midlertidig passord. Brukeren må velge eget passord ved neste innlogging.
 - Dataene har RLS i Supabase. Filer ligger i private Storage-bøtter, og vises med kortvarige signerte lenker.
 - Vurderingskriteriene er transkribert fra originalmalen datert 7. oktober 2026. De finnes på egen side og i konseptsjekkrapporten.
 
@@ -29,7 +29,7 @@ Intern webapp for Obs Bygg. Løsningen har uanmeldte konseptsjekker, månedlige 
 
 PDF og PowerPoint bygges fra publiserte øyeblikksbilder. Eksportene håndterer liggende JPEG og stående WebP/PNG uten å beskjære motivet. Kriteriene ligger kompakt i slutten av konseptsjekkrapporten. Oppgavebilder følger foreløpig oppgavevisningen, ikke eksportfilen.
 
-`/api/jobs/run` krever `Authorization: Bearer <CRON_SECRET>`. Vercel-oppsettet ber om kjøring hvert tiende minutt; dette krever en plan eller jobbkjører som støtter frekvensen. Publiseringsvarsler krever `RESEND_API_KEY` og `NOTIFICATION_FROM`. Supabase Auth SMTP må konfigureres separat før automatiske e-poster om opprettelse og passordgjenoppretting brukes. Inntil da setter administrator et midlertidig passord og deler det direkte med brukeren.
+`/api/jobs/run` krever `Authorization: Bearer <CRON_SECRET>`. Vercel-oppsettet ber om kjøring hvert tiende minutt; dette krever en plan eller jobbkjører som støtter frekvensen. Publiseringsvarsler krever `RESEND_API_KEY` og `NOTIFICATION_FROM`. Brukeropprettelse og passordtilbakestilling fungerer uten SMTP: administrator setter et midlertidig passord og deler det direkte med brukeren gjennom en avtalt, trygg kanal. Brukeren må deretter velge eget passord. SMTP trengs først hvis automatiske e-poster ønskes.
 
 ## Verifisering
 
