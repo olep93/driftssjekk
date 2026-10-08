@@ -52,7 +52,7 @@ export default function ImageMarker({ file, onSave, onCancel }: {
       const scale=Math.min(1,1600/Math.max(image.width,image.height));
       const canvas=canvasRef.current;
       if (canvas) {canvas.width=Math.max(1,Math.round(image.width*scale));canvas.height=Math.max(1,Math.round(image.height*scale));paint();setReady(true);}
-    }).catch(() => setError("Kunne ikke åpne bildet."));
+    }).catch(() => setError("Nettleseren kunne ikke åpne bildet. Prøv JPEG hvis HEIC ikke støttes her."));
     return () => {cancelled=true;imageRef.current?.close();imageRef.current=null;};
   // The selected file stays fixed for the life of this dialog.
   },[file]);
