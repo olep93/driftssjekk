@@ -208,6 +208,18 @@ input::placeholder,textarea::placeholder{color:#8795a4;font-weight:400}
 .image-marker-tools{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px}
 .image-marker-stage{background:#18202b;display:grid;place-items:center;max-height:65dvh;overflow:auto}
 .image-marker-stage canvas{display:block;max-width:100%;max-height:65dvh;width:auto;height:auto;cursor:crosshair}
+.image-marker-caption{margin-top:14px}
+.image-marker-caption textarea{width:100%;min-height:76px;padding:10px 12px;border:1px solid #cfd9e1;border-radius:8px;resize:vertical}
+.image-marker-caption-hint{margin:6px 0 12px}
+.image-grid{grid-template-columns:repeat(auto-fill,minmax(185px,1fr))}
+.image-item{min-width:0;padding:10px;border:1px solid var(--line);border-radius:8px;background:#fff}
+.image-item img{height:130px}
+.image-item .image-caption{min-height:34px;margin:8px 0 4px;overflow-wrap:anywhere}
+.image-item-actions{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
+.image-item-actions .button{min-height:38px;padding:7px 10px;font-size:.78rem}
+.image-caption-form label{display:grid;gap:5px;font-size:.76rem;font-weight:700}
+.image-caption-form textarea{width:100%;padding:8px;border:1px solid #cfd9e1;border-radius:8px;resize:vertical;font-size:.82rem}
+.image-caption-form .feedback{margin:7px 0;font-size:.74rem}
 @media(max-width:600px){.image-marker-dialog{padding:14px}.image-marker-header{align-items:flex-start}.image-marker-tools .button{font-size:12px;padding:8px 10px}}
 
 .selection-fieldset{border:1px solid var(--line);border-radius:9px;padding:16px;min-width:0}.selection-fieldset legend{font-size:.84rem;font-weight:750;padding:0 6px}.selection-option{display:flex!important;flex-direction:row!important;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);cursor:pointer}.selection-option:last-of-type{border-bottom:0}.selection-option input{width:18px!important;min-height:18px!important;height:18px!important;margin:2px 0 0;flex:none}.selection-option span{min-width:0}.selection-option strong,.selection-option small{display:block}.selection-option small{font-size:.75rem;font-weight:500;color:var(--muted);margin-top:3px}.selection-fieldset p{margin:10px 0 0}

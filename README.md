@@ -5,7 +5,7 @@ Intern webapp for Obs Bygg. Løsningen har uanmeldte konseptsjekker, månedlige 
 ## Slik fungerer det
 
 - Begge rapporttyper får karakter 1–10 for Drive-In, Butikk, Uteområde og Varemottak. Karakter 6 er konsept. Bare uanmeldte konseptsjekker teller i konseptrangeringen; månedlige karakterer viser intern progresjon.
-- Vurderinger kan lagres som kladd, suppleres med bilder per område og publiseres. Publiserte versjoner er låst; korrigeringer får en ny versjon.
+- Vurderinger kan lagres som kladd, suppleres med bilder per område og publiseres. Bildetekst kan legges til før opplasting eller endres på bildet i kladden etterpå. Publiserte versjoner er låst; korrigeringer får en ny versjon.
 - Driftssjefen kan gi en oppgave fra hvert område i en publisert rapport, med tekst, frist og et opplastet bilde eller et bilde fra rapporten. Varehuset ser oppgaven under **Oppfølging** og kan svare, endre status og laste opp bilde av løsningen.
 - Administrator velger samvirkelag, rolle og varehustilgang. Driftssjef kan ha hele samvirkelaget eller utvalgte varehus. Startpassordet kan brukes videre; alle innloggede brukere kan endre det under **Min konto**. Systemadministrator kan slette testrapporter og tomme runder og tilbakestille brukerpassord. Etter en tilbakestilling må brukeren velge et nytt passord ved neste innlogging.
 - Dataene har RLS i Supabase. Filer ligger i private Storage-bøtter, og vises med kortvarige signerte lenker.

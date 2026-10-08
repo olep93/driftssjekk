@@ -7,7 +7,7 @@ type Point = { x: number; y: number };
 type Stroke = { tool: Tool; points: Point[] };
 
 export default function ImageMarker({ file, onSave, onCancel }: {
-  file: File; onSave: (blob: Blob) => Promise<void>; onCancel: () => void;
+  file: File; onSave: (blob: Blob, caption: string) => Promise<void>; onCancel: () => void;
 }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const imageRef = useRef<ImageBitmap | null>(null);
@@ -18,6 +18,7 @@ export default function ImageMarker({ file, onSave, onCancel }: {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [count, setCount] = useState(0);
+  const [caption, setCaption] = useState("");
 
   function paint() {
     const canvas = canvasRef.current, image = imageRef.current;
@@ -71,7 +72,7 @@ export default function ImageMarker({ file, onSave, onCancel }: {
     setBusy(true);setError("");
     try {
       const blob=await new Promise<Blob>((resolve,reject)=>canvas.toBlob((value)=>value?resolve(value):reject(new Error("Kunne ikke behandle bildet")),"image/jpeg",.88));
-      await onSave(blob);
+      await onSave(blob, caption.trim());
     } catch (issue) {setError(issue instanceof Error?issue.message:"Kunne ikke lagre bildet");}
     finally {setBusy(false);}
   }
@@ -88,6 +89,8 @@ export default function ImageMarker({ file, onSave, onCancel }: {
       onPointerDown={(event)=>{if(!ready)return;event.currentTarget.setPointerCapture(event.pointerId);activeRef.current={tool,points:[point(event)]};paint();}}
       onPointerMove={(event)=>{if(!activeRef.current)return;activeRef.current.points.push(point(event));paint();}}
       onPointerUp={end} onPointerCancel={end}/></div>
+    <label className="field image-marker-caption">Bildetekst (valgfritt)<textarea value={caption} onChange={(event)=>setCaption(event.target.value)} maxLength={1000} rows={2} placeholder="Hva vil du vise med dette bildet?"/></label>
+    <p className="muted small image-marker-caption-hint">Du kan også legge til eller endre bildeteksten etter opplasting.</p>
     {error&&<p className="feedback error" role="alert">{error}</p>}
     <div className="page-actions" style={{justifyContent:"flex-end"}}><button type="button" className="button" onClick={onCancel} disabled={busy}>Avbryt</button><button type="button" className="button primary" onClick={()=>void save()} disabled={!ready||busy}>{busy?"Lagrer …":"Lagre bilde"}</button></div>
   </section></div>;
