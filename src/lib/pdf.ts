@@ -3,6 +3,7 @@ import sharp from "sharp";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { areas, formatDate, formatScore } from "./scoring";
 import { conceptBand, conceptLabel, criteriaSections } from "./criteria";
+import { reportKindLabelUpper } from "./report-kind";
 
 type Snapshot = { kind:string;store_name:string;cooperative_name:string;round_title:string|null;visit_date:string;assessor_name:string;summary:string;total:number|null;version_no:number;areas:{key:string;score_quarters:number|null;comment:string;needs_follow_up:boolean;images:{path:string;caption:string}[]}[] };
 const navy=rgb(.07,.15,.25),orange=rgb(.91,.46,.15),muted=rgb(.39,.45,.52),line=rgb(.86,.89,.91),red=rgb(.64,.26,.24),green=rgb(.13,.42,.31);
@@ -31,6 +32,7 @@ function splitLines(text:string,font:PDFFont,size:number,maxWidth:number){
 }
 export async function buildReportPdf(snapshot:Snapshot,supabase:SupabaseClient):Promise<Uint8Array>{
   const pdf=await PDFDocument.create();const regular=await pdf.embedFont(StandardFonts.Helvetica);const bold=await pdf.embedFont(StandardFonts.HelveticaBold);
+  const partialEvent=snapshot.kind==="event_check"&&snapshot.areas.length<4;
   const width=595.28,height=841.89,margin=47,contentWidth=width-2*margin;
   let page:PDFPage=pdf.addPage([width,height]);let y:number=height-margin;
   function newPage(){page=pdf.addPage([width,height]);y=height-margin;page.drawRectangle({x:0,y:height-10,width,height:10,color:navy});page.drawText(printable(snapshot.store_name).slice(0,70),{x:margin,y,size:9,font:bold,color:muted});y-=26;}
@@ -40,14 +42,14 @@ export async function buildReportPdf(snapshot:Snapshot,supabase:SupabaseClient):
   }
   page.drawRectangle({x:0,y:height-11,width,height:11,color:navy});
   page.drawRectangle({x:0,y:height-11,width:170,height:11,color:orange});
-  text(snapshot.kind==="inspection"?"UANMELDT KONSEPTSJEKK":"MÅNEDLIG DRIFTSGJENNOMGANG",10,bold,orange,21);
+  text(reportKindLabelUpper(snapshot.kind),10,bold,orange,21);
   text(snapshot.store_name,24,bold,navy,32);
   text(snapshot.cooperative_name+(snapshot.round_title?`  ·  ${snapshot.round_title}`:""),10,regular,muted,19);
   room(65);page.drawRectangle({x:margin,y:y-56,width:contentWidth,height:61,color:rgb(.95,.97,.98)});
-  page.drawRectangle({x:margin,y:y-56,width:4,height:61,color:snapshot.kind==="inspection"?conceptColor(snapshot.total):orange});
-  page.drawText(snapshot.kind==="inspection"?"TOTALKARAKTER":"DRIFTSKARAKTER",{x:margin+15,y:y-15,size:9,font:bold,color:muted});
-  page.drawText(formatScore(snapshot.total),{x:margin+15,y:y-43,size:snapshot.total==null?18:25,font:bold,color:snapshot.kind==="inspection"?conceptColor(snapshot.total):navy});
-  if(snapshot.kind==="inspection")page.drawText(printable(conceptLabel(snapshot.total)),{x:margin+96,y:y-43,size:10,font:bold,color:conceptColor(snapshot.total)});
+  page.drawRectangle({x:margin,y:y-56,width:4,height:61,color:snapshot.kind!=="self_check"?conceptColor(snapshot.total):orange});
+  page.drawText(snapshot.kind==="self_check"?"DRIFTSKARAKTER":partialEvent?"DELVURDERING":"TOTALKARAKTER",{x:margin+15,y:y-15,size:9,font:bold,color:muted});
+  page.drawText(formatScore(snapshot.total),{x:margin+15,y:y-43,size:snapshot.total==null?18:25,font:bold,color:snapshot.kind!=="self_check"?conceptColor(snapshot.total):navy});
+  if(snapshot.kind!=="self_check")page.drawText(printable(partialEvent?"Tildelte områder":conceptLabel(snapshot.total)),{x:margin+96,y:y-43,size:10,font:bold,color:conceptColor(snapshot.total)});
   else page.drawText("Intern progresjon",{x:margin+115,y:y-43,size:10,font:bold,color:navy});
   page.drawText(`Besøk ${formatDate(snapshot.visit_date)}  ·  Versjon ${snapshot.version_no}`,{x:margin+290,y:y-36,size:10,font:regular,color:muted});y-=83;
   text(`Vurderer: ${snapshot.assessor_name||"Ukjent"}`,10,regular,muted,20);
@@ -58,7 +60,7 @@ export async function buildReportPdf(snapshot:Snapshot,supabase:SupabaseClient):
     room(55);page.drawLine({start:{x:margin,y},end:{x:width-margin,y},thickness:1,color:line});y-=24;
     page.drawText(area.label,{x:margin,y,size:15,font:bold,color:navy});
     const score=a.score_quarters==null?null:a.score_quarters/4;
-    page.drawText(formatScore(score),{x:width-margin-(score==null?96:55),y,size:score==null?10:15,font:bold,color:snapshot.kind==="inspection"?conceptColor(score):navy});y-=25;
+    page.drawText(formatScore(score),{x:width-margin-(score==null?96:55),y,size:score==null?10:15,font:bold,color:snapshot.kind!=="self_check"?conceptColor(score):navy});y-=25;
     if(a.needs_follow_up)text("Krever oppfølging",9,bold,orange,17);
     text(a.comment||"Ingen kommentar.",10,regular,navy,14);y-=8;
     for(const image of a.images){
@@ -82,7 +84,7 @@ export async function buildReportPdf(snapshot:Snapshot,supabase:SupabaseClient):
       }catch{ text("Bilde er tilgjengelig i nettversjonen.",9,regular,muted,15); }
     }
   }
-  if(snapshot.kind==="inspection"){
+  if(snapshot.kind!=="self_check"){
     const gap=20,columnWidth=(contentWidth-gap)/2,bottom=margin+24;
     let column=0,top=0,cursor=0;
     function criteriaPage(){
@@ -119,6 +121,6 @@ export async function buildReportPdf(snapshot:Snapshot,supabase:SupabaseClient):
       cursor-=11;
     }
   }
-  const pages=pdf.getPages();pages.forEach((p,index)=>{p.drawLine({start:{x:margin,y:37},end:{x:width-margin,y:37},thickness:1,color:line});p.drawText(`${snapshot.kind==="inspection"?"Konseptsjekk":"Driftsgjennomgang"} - ${printable(snapshot.store_name)}`,{x:margin,y:24,size:8,font:regular,color:muted});p.drawText(`${index+1} / ${pages.length}`,{x:width-margin-35,y:24,size:8,font:regular,color:muted});});
+  const pages=pdf.getPages();pages.forEach((p,index)=>{p.drawLine({start:{x:margin,y:37},end:{x:width-margin,y:37},thickness:1,color:line});p.drawText(`${snapshot.kind==="event_check"?"Samling - konseptrunde":snapshot.kind==="inspection"?"Konseptsjekk":"Driftsgjennomgang"} - ${printable(snapshot.store_name)}`,{x:margin,y:24,size:8,font:regular,color:muted});p.drawText(`${index+1} / ${pages.length}`,{x:width-margin-35,y:24,size:8,font:regular,color:muted});});
   return pdf.save();
 }

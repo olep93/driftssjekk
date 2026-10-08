@@ -33,6 +33,10 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ ve
   const parsed = schema.safeParse(await request.json().catch(() => null));
   if (!parsed.success) return apiError("Ugyldige rapportdata");
   const { data, error } = await auth.supabase.rpc("save_draft", { p_version: versionId, p_lock: parsed.data.lockVersion, p_visit_date: parsed.data.visitDate, p_summary: parsed.data.summary, p_areas: parsed.data.areas });
+  if (error?.message.includes("Ingen tilgang til kladd")) {
+    const {data:version}=await auth.supabase.from("report_versions").select("state").eq("id",versionId).maybeSingle();
+    if(version?.state==="published")return apiError("Rapporten ble publisert av en annen bruker. Last inn siden på nytt.",409);
+  }
   if (error) return apiError(error.message,rpcError(error.message));
   return NextResponse.json({ lockVersion: data });
 }
@@ -43,6 +47,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ ver
   const parsed = z.object({ lockVersion: z.number().int().positive(), reason: z.string().max(2000).nullable() }).safeParse(await request.json().catch(() => null));
   if (!parsed.success) return apiError("Ugyldig publisering");
   const { data, error } = await auth.supabase.rpc("publish_report", { p_version: versionId, p_lock: parsed.data.lockVersion, p_reason: parsed.data.reason });
+  if (error?.message.includes("Ingen tilgang til kladd")) {
+    const {data:version}=await auth.supabase.from("report_versions").select("state").eq("id",versionId).maybeSingle();
+    if(version?.state==="published")return apiError("Rapporten ble publisert av en annen bruker. Last inn siden på nytt.",409);
+  }
   if (error) return apiError(error.message,rpcError(error.message));
   return NextResponse.json({ reportId: data });
 }

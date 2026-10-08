@@ -1,9 +1,9 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { totalFromQuarters, type AreaKey } from "./scoring";
+import { averageFromQuarters, totalFromQuarters, type AreaKey } from "./scoring";
 
 export type Store = { id: string; cooperative_id: string; name: string; active: boolean };
 export type Round = { id: string; cooperative_id: string; title: string; sequence_no: number; status: string; planned_from: string | null; planned_to: string | null; summary: string };
-export type Report = { id: string; cooperative_id: string; store_id: string; round_id: string | null; kind: "inspection" | "self_check"; current_version_id: string | null; created_at: string; archived_at: string | null; withdrawn_at: string | null; created_by: string };
+export type Report = { id: string; cooperative_id: string; store_id: string; round_id: string | null; event_id: string | null; kind: "inspection" | "self_check"; current_version_id: string | null; created_at: string; archived_at: string | null; withdrawn_at: string | null; created_by: string };
 export type Version = { id: string; report_id: string; version_no: number; state: "draft" | "published"; visit_date: string | null; summary: string; lock_version: number; updated_at?: string; published_at: string | null; change_reason: string | null; assessor_id: string };
 export type Area = { version_id: string; area_key: AreaKey; score_quarters: number | null; comment: string; needs_follow_up: boolean };
 export type Action = { id: string; report_id: string; description: string; status: string; due_date: string | null; area_key: string | null };
@@ -11,7 +11,7 @@ export type Action = { id: string; report_id: string; description: string; statu
 export async function loadCore(supabase: SupabaseClient, cooperativeId?: string) {
   const storeQuery = supabase.from("stores").select("id,cooperative_id,name,active").order("name");
   const roundQuery = supabase.from("rounds").select("id,cooperative_id,title,sequence_no,status,planned_from,planned_to,summary").order("sequence_no", { ascending: false });
-  const reportQuery = supabase.from("reports").select("id,cooperative_id,store_id,round_id,kind,current_version_id,created_at,archived_at,withdrawn_at,created_by").order("created_at", { ascending: false }).limit(500);
+  const reportQuery = supabase.from("reports").select("id,cooperative_id,store_id,round_id,event_id,kind,current_version_id,created_at,archived_at,withdrawn_at,created_by").order("created_at", { ascending: false }).limit(500);
   const [storesResult, roundsResult, reportsResult] = await Promise.all([
     cooperativeId ? storeQuery.eq("cooperative_id", cooperativeId) : storeQuery,
     cooperativeId ? roundQuery.eq("cooperative_id", cooperativeId) : roundQuery,
@@ -35,7 +35,9 @@ export function scoreFor(report: Report | undefined, versions: Version[], areas:
   const version = versions.find((v) => v.id === report.current_version_id);
   if (!version) return null;
   const scores = areas.filter((a) => a.version_id === version.id).map((a) => a.score_quarters);
-  return scores.every((n): n is number => n !== null) ? totalFromQuarters(scores as number[]) : null;
+  return scores.every((n): n is number => n !== null)
+    ? report.event_id ? averageFromQuarters(scores as number[]) : totalFromQuarters(scores as number[])
+    : null;
 }
 
 export function latestInspections(reports: Report[], versions: Version[]): Report[] {

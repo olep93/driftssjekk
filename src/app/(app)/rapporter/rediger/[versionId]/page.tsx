@@ -4,6 +4,7 @@ import { canOperateStore, getContext } from "@/lib/auth";
 import { PageHeading } from "@/components/ui";
 import Editor from "./editor";
 import type { Area, Report, Version } from "@/lib/data";
+import { reportKindLabel } from "@/lib/report-kind";
 
 export default async function EditReport({ params }: { params: Promise<{ versionId: string }> }) {
   const { versionId } = await params;
@@ -15,6 +16,10 @@ export default async function EditReport({ params }: { params: Promise<{ version
   if (!report) notFound();
   if (report.kind === "inspection" && !canOperateStore(ctx.memberships,report.cooperative_id,report.store_id)) notFound();
   if (report.kind === "self_check" && report.created_by !== ctx.userId) notFound();
+  if (report.event_id) {
+    const { data: event } = await ctx.supabase.from("events").select("status").eq("id",report.event_id).maybeSingle();
+    if (event?.status === "closed") return <><PageHeading eyebrow="Samling avsluttet" title="Vurderingen er låst" description="Driftssjef kan åpne samlingen igjen hvis vurderingen skal fullføres."/><Link className="button" href={`/samlinger/${report.event_id}`}>Tilbake til samlingen</Link></>;
+  }
   const [{ data: store }, { data: assessmentRows }, { data: imageRows }] = await Promise.all([
     ctx.supabase.from("stores").select("name").eq("id",report.store_id).single(),
     ctx.supabase.from("area_assessments").select("*").eq("version_id",versionId),
@@ -24,5 +29,5 @@ export default async function EditReport({ params }: { params: Promise<{ version
     const { data } = await ctx.supabase.storage.from("report-images").createSignedUrl(image.object_path, 300);
     return { id:image.id, area_key:image.area_key, caption:image.caption, url:data?.signedUrl || "" };
   }));
-  return <><div className="breadcrumb"><Link href="/rapporter">Rapporter</Link> / Kladd / {store?.name}</div><PageHeading eyebrow={report.kind === "inspection" ? "Uanmeldt konseptsjekk" : "Månedlig driftsgjennomgang"} title={store?.name || "Rapport"} description={version.version_no > 1 ? `Korrigering · versjon ${version.version_no}` : report.kind === "inspection" ? "Vurder de fire områdene og publiser når de er klare." : "Vurder de fire områdene. Karakterene brukes til intern progresjon, utenfor konseptrangeringen."}/><Editor version={version as Version} report={report as Report} assessments={(assessmentRows || []) as Area[]} images={images} canDelete={ctx.systemAdmin}/></>;
+  return <><div className="breadcrumb"><Link href={report.event_id ? `/samlinger/${report.event_id}` : "/rapporter"}>{report.event_id ? "Samling" : "Rapporter"}</Link> / Kladd / {store?.name}</div><PageHeading eyebrow={reportKindLabel(report.kind,report.event_id)} title={store?.name || "Rapport"} description={version.version_no > 1 ? `Korrigering · versjon ${version.version_no}` : report.event_id ? "Vurder de fire konseptområdene. Resultatet holdes utenfor den offisielle rangeringen." : report.kind === "inspection" ? "Vurder de fire områdene og publiser når de er klare." : "Vurder de fire områdene. Karakterene brukes til intern progresjon, utenfor konseptrangeringen."}/><Editor version={version as Version} report={report as Report} assessments={(assessmentRows || []) as Area[]} images={images} canDelete={ctx.systemAdmin}/></>;
 }

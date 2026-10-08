@@ -17,7 +17,7 @@ export default async function PeriodReport({searchParams}:{searchParams:Promise<
   const {data:coops}=await ctx.supabase.from("cooperatives").select("id,name");
   const allowedStores=operations?core.stores:core.stores.filter((s)=>ctx.memberships.some((m)=>m.role==="store_manager"&&m.store_id===s.id));
   const selectedStore=allowedStores.some((s)=>s.id===params.store)?params.store:null;
-  const rows=core.reports.filter((r)=>r.kind===kind&&r.current_version_id&&!r.withdrawn_at&&(!selectedStore||r.store_id===selectedStore)).map((r)=>({report:r,version:core.versions.find((v)=>v.id===r.current_version_id),score:scoreFor(r,core.versions,core.areas)})).filter((r)=>r.version?.visit_date&&(!params.from||r.version.visit_date>=params.from)&&r.version.visit_date<=endDate).sort((a,b)=>(b.version?.visit_date||"").localeCompare(a.version?.visit_date||""));
+  const rows=core.reports.filter((r)=>!r.event_id&&r.kind===kind&&r.current_version_id&&!r.withdrawn_at&&(!selectedStore||r.store_id===selectedStore)).map((r)=>({report:r,version:core.versions.find((v)=>v.id===r.current_version_id),score:scoreFor(r,core.versions,core.areas)})).filter((r)=>r.version?.visit_date&&(!params.from||r.version.visit_date>=params.from)&&r.version.visit_date<=endDate).sort((a,b)=>(b.version?.visit_date||"").localeCompare(a.version?.visit_date||""));
   const areaScore=(versionId:string|undefined,key:AreaKey)=>{const quarters=core.areas.find((a)=>a.version_id===versionId&&a.area_key===key)?.score_quarters;return quarters==null?null:quarters/4;};
   const scoredRows=rows.filter((r)=>r.score!==null);
   const average=scoredRows.length?scoredRows.reduce((sum,r)=>sum+r.score!,0)/scoredRows.length:null;

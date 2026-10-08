@@ -18,6 +18,18 @@ describe("rapport-PowerPoint",()=>{
     expect(Buffer.from(bytes.subarray(0,4)).toString("hex")).toBe("504b0304");
     if(process.env.PPTX_VISUAL_QA==="1"){mkdirSync("tmp/pptx",{recursive:true});writeFileSync("tmp/pptx/qa-maanedlig.pptx",bytes);}
   });
+  it("lager PowerPoint for konseptrunde på samling",async()=>{
+    const snapshot={kind:"event_check",store_name:"Obs Bygg Sandefjord",cooperative_name:"Coop Sørøst",round_title:"Felles samling i Sandefjord",visit_date:"2026-10-08",assessor_name:"Varehussjef",summary:"Felles vurdering",total:7,version_no:1,areas:["drive_in","store","outdoor","goods_receiving"].map((key)=>({key,score_quarters:28,comment:"Kort observasjon.",needs_follow_up:false,images:[]}))};
+    const bytes=await buildReportPptx(snapshot,{} as SupabaseClient);
+    expect(bytes.byteLength).toBeGreaterThan(10000);
+    expect(Buffer.from(bytes.subarray(0,4)).toString("hex")).toBe("504b0304");
+  });
+  it("lager PowerPoint for en delvurdering av tildelt område",async()=>{
+    const snapshot={kind:"event_check",store_name:"Obs Bygg Sandefjord",cooperative_name:"Coop Sørøst",round_title:"Felles besøk",visit_date:"2026-10-08",assessor_name:"Varehussjef",summary:"Vurdering av butikk",total:7,version_no:1,areas:[{key:"store",score_quarters:28,comment:"Ryddig butikk",needs_follow_up:false,images:[]}]};
+    const bytes=await buildReportPptx(snapshot,{} as SupabaseClient);
+    expect(bytes.byteLength).toBeGreaterThan(10000);
+    expect(Buffer.from(bytes.subarray(0,4)).toString("hex")).toBe("504b0304");
+  });
   it("legger stående og liggende bilder på egne lysbilder",async()=>{
     const landscape=await sharp({create:{width:1200,height:760,channels:3,background:"#55758b"}}).jpeg().toBuffer();
     const portrait=await sharp({create:{width:760,height:1200,channels:3,background:"#b98967"}}).webp().toBuffer();

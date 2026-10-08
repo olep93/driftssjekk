@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { BarChart3, ClipboardList, Warehouse, FileText, ListChecks, Settings, LogOut, BookOpen } from "lucide-react";
+import { BarChart3, CalendarDays, ClipboardList, Warehouse, FileText, ListChecks, Settings, LogOut, BookOpen } from "lucide-react";
 import { defaultCooperativeId, getContext, isFullOperations, isOperations } from "@/lib/auth";
 import { MobileNavigation, StartNewMenu } from "@/components/app-navigation";
 
@@ -21,6 +21,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   ];
   const secondaryLinks = [
     ...(fullOperations ? [{ href: "/runder", label: "Konseptsjekkrunder", icon: ClipboardList }] : []),
+    { href: "/samlinger", label: "Samlinger", icon: CalendarDays },
     { href: "/kriterier", label: "Kriterier", icon: BookOpen },
     ...(admin ? [{ href: "/administrasjon", label: "Administrasjon", icon: Settings }] : []),
   ];

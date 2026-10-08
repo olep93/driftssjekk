@@ -11,6 +11,7 @@ Oppdatert 8. oktober 2026.
 - Brukeropprettelse velger S-lag før rolle og varehus. Driftssjef får som standard alle nåværende og fremtidige varehus i valgt S-lag.
 - To driftssjefer kan arbeide i samme konseptsjekkkladd. Ulike skjemafelt flettes ved samtidig lagring; ved endring i samme felt må brukeren velge hvilken utgave som beholdes. Bilder synkroniseres hvert tiende sekund når skjemaet ikke har ulagrede tekstendringer.
 - Bilder kan markeres i nettleseren med rød sirkel, rød penn eller gul merketusj før opplasting. Markeringen er en del av det lagrede bildet og blir med i PDF og PowerPoint.
+- Driftssjef kan opprette en samling ved ett besøksvarehus og invitere varehussjefer fra egne varehus. Arrangøren fordeler de fire områdene mellom deltakerne. Deltakere ser samlingen ved innlogging og vurderer bare sine tildelte områder med karakterer, tekst og bilder. Når alle har publisert, kan arrangøren laste ned samlet PDF og PowerPoint. Samlingsresultater holdes utenfor både årets varehus og månedlig progresjon. Automatisk e-postinvitasjon er ikke satt opp.
 - PDF og PowerPoint er kontrollert med både stående og liggende testbilder. Kriteriene er komprimert til et vedlegg i konseptsjekkeksportene.
 - Supabase-databasen ligger i Stockholm. Vercel-funksjoner er konfigurert for Stockholm (`arn1`); produksjonsdistribusjonen må verifiseres etter publisering.
 

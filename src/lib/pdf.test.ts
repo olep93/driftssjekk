@@ -26,6 +26,16 @@ describe("rapport-PDF",()=>{
     const pdf=await PDFDocument.load(await buildReportPdf(snapshot,{} as SupabaseClient));
     expect(pdf.getPageCount()).toBe(2);
   });
+  it("lager samlingens konseptrunde med kriterievedlegg",async()=>{
+    const snapshot={kind:"event_check",store_name:"Obs Bygg Sandefjord",cooperative_name:"Coop Sørøst",round_title:"Felles samling i Sandefjord",visit_date:"2026-10-08",assessor_name:"Varehussjef",summary:"Felles vurdering",total:7,version_no:1,areas:["drive_in","store","outdoor","goods_receiving"].map((key)=>({key,score_quarters:28,comment:"Kort observasjon.",needs_follow_up:false,images:[]}))};
+    const pdf=await PDFDocument.load(await buildReportPdf(snapshot,{} as SupabaseClient));
+    expect(pdf.getPageCount()).toBe(2);
+  });
+  it("lager en delvurdering med bare tildelt område",async()=>{
+    const snapshot={kind:"event_check",store_name:"Obs Bygg Sandefjord",cooperative_name:"Coop Sørøst",round_title:"Felles besøk",visit_date:"2026-10-08",assessor_name:"Varehussjef",summary:"Vurdering av butikk",total:7,version_no:1,areas:[{key:"store",score_quarters:28,comment:"Ryddig butikk",needs_follow_up:false,images:[]}]};
+    const pdf=await PDFDocument.load(await buildReportPdf(snapshot,{} as SupabaseClient));
+    expect(pdf.getPageCount()).toBe(2);
+  });
   it("plasserer stående og liggende bilder i PDF-en",async()=>{
     const landscape=await sharp({create:{width:1200,height:760,channels:3,background:"#55758b"}}).jpeg().toBuffer();
     const portrait=await sharp({create:{width:760,height:1200,channels:3,background:"#b98967"}}).webp().toBuffer();

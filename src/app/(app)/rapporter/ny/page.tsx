@@ -14,5 +14,15 @@ export default async function NewReport({ searchParams }: { searchParams: Promis
   const { data: rounds } = operations ? await ctx.supabase.from("rounds").select("id,title,cooperative_id,status").neq("status","closed").order("sequence_no",{ascending:false}) : { data: [] };
   const permittedStores = kind === "self_check" ? (stores || []).filter((s) => ctx.memberships.some((m) => m.role === "store_manager" && m.store_id === s.id)) : (stores || []).filter((s) => canOperateStore(ctx.memberships,s.cooperative_id,s.id));
   const homeStore = ctx.memberships.find((membership) => membership.role === "store_manager")?.store_id;
-  return <><PageHeading eyebrow="Rapporter" title={kind === "inspection" ? "Ny uanmeldt konseptsjekk" : "Ny månedlig driftsgjennomgang"} description="Velg varehus og start registreringen. Du kan lagre en ufullstendig kladd."/><section className="panel" style={{maxWidth:650}}><NewReportForm stores={permittedStores} coops={coops || []} rounds={rounds || []} kind={kind} initialStore={params.store || homeStore || undefined} initialRound={params.round}/></section></>;
+  const { data: inspectionReports } = kind === "inspection" && permittedStores.length
+    ? await ctx.supabase.from("reports").select("id,store_id,round_id").eq("kind","inspection").is("event_id",null).is("archived_at",null).is("withdrawn_at",null).in("store_id",permittedStores.map((store) => store.id)).order("created_at",{ascending:false}).limit(200)
+    : { data: [] };
+  const { data: openVersions } = inspectionReports?.length
+    ? await ctx.supabase.from("report_versions").select("id,report_id,updated_at").eq("state","draft").in("report_id",inspectionReports.map((report) => report.id))
+    : { data: [] };
+  const sharedDrafts = (openVersions || []).flatMap((version) => {
+    const report = inspectionReports?.find((entry) => entry.id === version.report_id);
+    return report ? [{versionId:version.id,storeId:report.store_id,roundId:report.round_id,updatedAt:version.updated_at}] : [];
+  }).sort((a,b) => b.updatedAt.localeCompare(a.updatedAt));
+  return <><PageHeading eyebrow="Rapporter" title={kind === "inspection" ? "Ny uanmeldt konseptsjekk" : "Ny månedlig driftsgjennomgang"} description={kind === "inspection" ? "Driftssjefer med tilgang til samme varehus kan fortsette i den samme kladden." : "Velg varehus og start registreringen. Du kan lagre en ufullstendig kladd."}/><section className="panel" style={{maxWidth:650}}><NewReportForm stores={permittedStores} coops={coops || []} rounds={rounds || []} sharedDrafts={sharedDrafts} kind={kind} initialStore={params.store || homeStore || undefined} initialRound={params.round}/></section></>;
 }

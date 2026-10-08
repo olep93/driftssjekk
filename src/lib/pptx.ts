@@ -3,6 +3,7 @@ import sharp from "sharp";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { areas, formatDate, formatScore } from "./scoring";
 import { conceptBand, conceptLabel, criteriaSections } from "./criteria";
+import { reportKindLabel } from "./report-kind";
 
 type Snapshot = { kind:string;store_name:string;cooperative_name:string;round_title:string|null;visit_date:string;assessor_name:string;summary:string;total:number|null;version_no:number;areas:{key:string;score_quarters:number|null;comment:string;needs_follow_up:boolean;images:{path:string;caption:string}[]}[] };
 const navy="142B43", orange="D66B28", green="236A4F", red="AD4944", muted="68788A", line="DCE4EB";
@@ -13,9 +14,11 @@ function bandColor(score:number|null){return conceptBand(score)==="below"?red:co
 function clean(value:string){return value.replace(/[\u0000-\u001f]/g," ").trim();}
 function pieces(value:string,max=320){const words=clean(value).split(/\s+/);const result:string[]=[];let current="";for(const word of words){if(current&&`${current} ${word}`.length>max){result.push(current);current=word;}else current=current?`${current} ${word}`:word;}if(current)result.push(current);return result.length?result:["Ingen kommentar."];}
 export async function buildReportPptx(snapshot:Snapshot,supabase:SupabaseClient):Promise<Uint8Array>{
-  const pptx=new PptxGenJS();pptx.layout="LAYOUT_WIDE";pptx.author="Driftssjekk";pptx.subject="Rapport fra varehus";pptx.title=`${snapshot.store_name} – ${snapshot.kind==="inspection"?"konseptsjekk":"driftsgjennomgang"}`;
+  const pptx=new PptxGenJS();pptx.layout="LAYOUT_WIDE";pptx.author="Driftssjekk";pptx.subject="Rapport fra varehus";pptx.title=`${snapshot.store_name} – ${snapshot.kind==="self_check"?"driftsgjennomgang":"konseptrunde"}`;
   pptx.theme={headFontFace:"Arial",bodyFontFace:"Arial"};
-  const kind=snapshot.kind==="inspection"?"Uanmeldt konseptsjekk":"Månedlig driftsgjennomgang";
+  const kind=reportKindLabel(snapshot.kind);
+  const reportAreas=snapshot.kind==="event_check"?areas.filter((area)=>snapshot.areas.some((item)=>item.key===area.key)):areas;
+  const partialEvent=snapshot.kind==="event_check"&&reportAreas.length<4;
   const slides:PptxGenJS.Slide[]=[];
   function slide(title:string,subtitle?:string){const s=pptx.addSlide();slides.push(s);s.background={color:"FFFFFF"};s.addShape(pptx.ShapeType.rect,{x:0,y:0,w:width,h:.11,line:{color:navy},fill:{color:navy}});s.addText(title,{x:.72,y:.42,w:11.9,h:.54,fontFace:"Arial",fontSize:27,bold:true,color:navy,margin:0,breakLine:false});if(subtitle)s.addText(subtitle,{x:.73,y:1.04,w:11.8,h:.38,fontFace:"Arial",fontSize:11,color:muted,margin:0});return s;}
   function footer(s:PptxGenJS.Slide){s.addShape(pptx.ShapeType.line,{x:.72,y:7.17,w:11.9,h:0,line:{color:line,width:1}});s.addText(`${kind} · ${snapshot.store_name}`,{x:.73,y:7.22,w:10.7,h:.18,fontFace:"Arial",fontSize:8,color:muted,margin:0});}
@@ -28,24 +31,24 @@ export async function buildReportPptx(snapshot:Snapshot,supabase:SupabaseClient)
   cover.addText(snapshot.store_name,{x:.75,y:1.94,w:11.55,h:.88,fontFace:"Arial",fontSize:35,bold:true,color:"FFFFFF",margin:0,fit:"shrink"});
   cover.addText(`${snapshot.cooperative_name}  ·  ${formatDate(snapshot.visit_date)}`,{x:.78,y:2.94,w:10.8,h:.33,fontFace:"Arial",fontSize:14,color:"BCD0DF",margin:0});
   cover.addShape(pptx.ShapeType.rect,{x:.78,y:3.75,w:5.15,h:2.14,line:{color:"35516C",width:1},fill:{color:"1D3A55"}});
-  cover.addText(snapshot.kind==="inspection"?"TOTALKARAKTER":"DRIFTSKARAKTER",{x:1.08,y:4.04,w:4.5,h:.28,fontFace:"Arial",fontSize:11,bold:true,color:"AFC3D3",charSpacing:1,margin:0});
+  cover.addText(snapshot.kind==="self_check"?"DRIFTSKARAKTER":partialEvent?"DELVURDERING":"TOTALKARAKTER",{x:1.08,y:4.04,w:4.5,h:.28,fontFace:"Arial",fontSize:11,bold:true,color:"AFC3D3",charSpacing:1,margin:0});
   cover.addText(formatScore(snapshot.total),{x:1.05,y:4.48,w:4.6,h:.95,fontFace:"Arial",fontSize:snapshot.total==null?27:58,bold:true,color:"FFFFFF",margin:0});
-  cover.addText(snapshot.kind==="inspection"?conceptLabel(snapshot.total):"Intern progresjon",{x:6.35,y:4.18,w:5.7,h:.57,fontFace:"Arial",fontSize:23,bold:true,color:snapshot.kind==="inspection"?"FFFFFF":"BCD0DF",margin:0});
+  cover.addText(snapshot.kind!=="self_check"?(partialEvent?"Tildelte områder":conceptLabel(snapshot.total)):"Intern progresjon",{x:6.35,y:4.18,w:5.7,h:.57,fontFace:"Arial",fontSize:23,bold:true,color:snapshot.kind!=="self_check"?"FFFFFF":"BCD0DF",margin:0});
   cover.addText(`Vurderer: ${snapshot.assessor_name||"Ukjent"}\nVersjon ${snapshot.version_no}`,{x:6.37,y:5.03,w:5.7,h:.75,fontFace:"Arial",fontSize:13,color:"BCD0DF",margin:0,breakLine:false});
   cover.addShape(pptx.ShapeType.line,{x:.78,y:6.98,w:11.77,h:0,line:{color:"446178",width:1}});
   cover.addText("OBS BYGG  /  VAREHUSSTANDARD",{x:.78,y:7.09,w:8.8,h:.2,fontFace:"Arial",fontSize:9,bold:true,color:"AAC0D0",margin:0});
 
   const summarySlides=paragraphSlides("Oppsummering",[snapshot.summary||"Ingen samlet kommentar."],snapshot.round_title||undefined);
   if(summarySlides.length===1&&clean(snapshot.summary).length<=280){const s=summarySlides[0];s.addText("RESULTAT PER OMRÅDE",{x:.75,y:4.57,w:11,h:.25,fontFace:"Arial",fontSize:11,bold:true,color:muted,margin:0});
-    areas.forEach((area,index)=>{const assessment=snapshot.areas.find((item)=>item.key===area.key),score=assessment?.score_quarters==null?null:assessment.score_quarters/4,x=.75+index*3.12;s.addShape(pptx.ShapeType.rect,{x,y:4.95,w:2.94,h:1.05,line:{color:line,width:1},fill:{color:"F7F9FB"}});s.addText(area.label,{x:x+.17,y:5.12,w:2.6,h:.24,fontFace:"Arial",fontSize:11,bold:true,color:muted,margin:0});s.addText(formatScore(score),{x:x+.17,y:5.43,w:2.6,h:.37,fontFace:"Arial",fontSize:score==null?13:22,bold:true,color:snapshot.kind==="inspection"?bandColor(score):navy,margin:0});});
+    reportAreas.forEach((area,index)=>{const assessment=snapshot.areas.find((item)=>item.key===area.key),score=assessment?.score_quarters==null?null:assessment.score_quarters/4,x=.75+index*3.12;s.addShape(pptx.ShapeType.rect,{x,y:4.95,w:2.94,h:1.05,line:{color:line,width:1},fill:{color:"F7F9FB"}});s.addText(area.label,{x:x+.17,y:5.12,w:2.6,h:.24,fontFace:"Arial",fontSize:11,bold:true,color:muted,margin:0});s.addText(formatScore(score),{x:x+.17,y:5.43,w:2.6,h:.37,fontFace:"Arial",fontSize:score==null?13:22,bold:true,color:snapshot.kind!=="self_check"?bandColor(score):navy,margin:0});});
   }
-  const compactAreas=areas.every((area)=>{const assessment=snapshot.areas.find((item)=>item.key===area.key);return !assessment?.needs_follow_up&&clean(assessment?.comment||"").length<=110;});
+  const compactAreas=reportAreas.every((area)=>{const assessment=snapshot.areas.find((item)=>item.key===area.key);return !assessment?.needs_follow_up&&clean(assessment?.comment||"").length<=110;});
   const areaBatch=compactAreas?4:2;
-  for(let offset=0;offset<areas.length;offset+=areaBatch){const s=slide("Områdevurderinger",`${kind} · ${formatDate(snapshot.visit_date)}`);
-    for(const [index,area] of areas.slice(offset,offset+areaBatch).entries()){const assessment=snapshot.areas.find((item)=>item.key===area.key),score=assessment?.score_quarters==null?null:assessment.score_quarters/4,y=compactAreas?1.58+index*1.28:1.62+index*2.55;
+  for(let offset=0;offset<reportAreas.length;offset+=areaBatch){const s=slide("Områdevurderinger",`${kind} · ${formatDate(snapshot.visit_date)}`);
+    for(const [index,area] of reportAreas.slice(offset,offset+areaBatch).entries()){const assessment=snapshot.areas.find((item)=>item.key===area.key),score=assessment?.score_quarters==null?null:assessment.score_quarters/4,y=compactAreas?1.58+index*1.28:1.62+index*2.55;
       s.addShape(pptx.ShapeType.rect,{x:.74,y,w:11.85,h:compactAreas?1.16:2.34,line:{color:line,width:1},fill:{color:"F9FBFC"}});
       s.addText(area.label,{x:1.02,y:y+(compactAreas ? .16 : .23),w:7.7,h:.4,fontFace:"Arial",fontSize:compactAreas?16:19,bold:true,color:navy,margin:0});
-      s.addText(formatScore(score),{x:9.15,y:y+(compactAreas ? .16 : .23),w:3.15,h:.4,fontFace:"Arial",fontSize:score==null?16:(compactAreas?20:24),bold:true,color:snapshot.kind==="inspection"?bandColor(score):navy,align:"right",margin:0});
+      s.addText(formatScore(score),{x:9.15,y:y+(compactAreas ? .16 : .23),w:3.15,h:.4,fontFace:"Arial",fontSize:score==null?16:(compactAreas?20:24),bold:true,color:snapshot.kind!=="self_check"?bandColor(score):navy,align:"right",margin:0});
       if(assessment?.needs_follow_up)s.addText("Krever oppfølging",{x:1.02,y:y+.7,w:5,h:.25,fontFace:"Arial",fontSize:11,bold:true,color:orange,margin:0});
       const commentPieces=pieces(assessment?.comment||"Ingen kommentar.",compactAreas?110:260);
       s.addText(commentPieces[0],{x:1.02,y:y+(compactAreas ? .62 : assessment?.needs_follow_up ? .99 : .84),w:11.1,h:compactAreas ? .42 : 1.18,fontFace:"Arial",fontSize:compactAreas?13.5:16,color:navy,margin:0,fit:"shrink",valign:"top"});
@@ -53,7 +56,7 @@ export async function buildReportPptx(snapshot:Snapshot,supabase:SupabaseClient)
     }
     footer(s);
   }
-  for(const area of areas){const assessment=snapshot.areas.find((item)=>item.key===area.key);if(!assessment)continue;
+  for(const area of reportAreas){const assessment=snapshot.areas.find((item)=>item.key===area.key);if(!assessment)continue;
     for(const [index,image] of assessment.images.entries()){
       const photoSlide=slide(area.label,`Dokumentasjon · bilde ${index+1} av ${assessment.images.length}`);
       try{
@@ -79,7 +82,7 @@ export async function buildReportPptx(snapshot:Snapshot,supabase:SupabaseClient)
       footer(photoSlide);
     }
   }
-  if(snapshot.kind==="inspection"){
+  if(snapshot.kind!=="self_check"){
     function criteriaSlide(left:typeof criteriaSections[number][],right:typeof criteriaSections[number][],part:number){
       const s=slide("Vurderingskriterier",`Originalmal · del ${part} av 2`);
       s.addText("Under 6: under konsept     6: konsept     Over 6: over konsept",{x:.75,y:1.43,w:11.7,h:.27,fontFace:"Arial",fontSize:11,bold:true,color:navy,margin:0});

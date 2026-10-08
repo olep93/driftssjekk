@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatScore, quartersFromInput, totalFromQuarters } from "./scoring";
+import { averageFromQuarters, formatScore, quartersFromInput, totalFromQuarters } from "./scoring";
 
 describe("karakterberegning", () => {
   it("godtar kun kvartsteg innenfor skalaen", () => {
@@ -13,5 +13,10 @@ describe("karakterberegning", () => {
     const total = totalFromQuarters([33, 34, 35, 31]);
     expect(total).toBe(8.3125);
     expect(formatScore(total)).toBe("8,31");
+  });
+  it("beregner karakter for bare de områdene en deltaker fikk", () => {
+    expect(averageFromQuarters([24])).toBe(6);
+    expect(averageFromQuarters([24, 28])).toBe(6.5);
+    expect(averageFromQuarters([])).toBeNull();
   });
 });

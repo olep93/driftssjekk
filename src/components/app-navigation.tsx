@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { BarChart3, BookOpen, ClipboardList, FileText, ListChecks, MoreHorizontal, Plus, Settings, UserPlus, Warehouse, X } from "lucide-react";
+import { BarChart3, BookOpen, CalendarDays, ClipboardList, FileText, ListChecks, MoreHorizontal, Plus, Settings, UserPlus, Warehouse, X } from "lucide-react";
 
 type Permissions = { operations: boolean; fullOperations?: boolean; monthly: boolean; admin?: boolean; storeId?: string };
 
@@ -13,6 +13,7 @@ function createLinks({ operations, fullOperations, monthly, admin, storeId }: Pe
     ...(operations ? [{ href: `/rapporter/ny?type=inspection${store}`, label: "Uanmeldt konseptsjekk", detail: "Vurder et varehus", icon: ClipboardList }] : []),
     ...(monthly ? [{ href: `/rapporter/ny?type=self_check${store}`, label: "Månedlig driftsgjennomgang", detail: "Vurder varehuset for intern progresjon", icon: FileText }] : []),
     ...(fullOperations && !storeId ? [{ href: "/runder/ny", label: "Konseptsjekkrunde", detail: "Planlegg flere varehusbesøk", icon: Plus }] : []),
+    ...(operations && !storeId ? [{ href: "/samlinger/ny", label: "Samling for varehussjefer", detail: "Inviter til en felles konseptrunde", icon: CalendarDays }] : []),
     ...(admin && !storeId ? [{ href: "/administrasjon", label: "Ny bruker", detail: "Opprett bruker og tildel tilgang", icon: UserPlus }] : []),
   ];
 }
@@ -51,6 +52,7 @@ export function MobileNavigation(props: Permissions) {
   const newLinks = createLinks(props);
   const moreLinks = [
     ...(props.fullOperations ? [{ href: "/runder", label: "Konseptsjekkrunder", icon: ClipboardList }] : []),
+    { href: "/samlinger", label: "Samlinger", icon: CalendarDays },
     { href: "/oppfolging", label: "Oppfølging", icon: ListChecks },
     { href: "/kriterier", label: "Kriterier", icon: BookOpen },
     ...(props.admin ? [{ href: "/administrasjon", label: "Administrasjon", icon: Settings }] : []),

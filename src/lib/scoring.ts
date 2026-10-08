@@ -20,6 +20,11 @@ export function totalFromQuarters(values: number[]): number | null {
     ? values.reduce((sum, value) => sum + value, 0) / 16
     : null;
 }
+export function averageFromQuarters(values: number[]): number | null {
+  return values.length >= 1 && values.length <= 4 && values.every(validQuarters)
+    ? values.reduce((sum, value) => sum + value, 0) / (values.length * 4)
+    : null;
+}
 const scoreFormat = new Intl.NumberFormat("nb-NO", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 export function formatScore(value: number | null | undefined): string {
   return value == null ? "Ikke vurdert" : scoreFormat.format(value);
