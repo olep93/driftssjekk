@@ -197,6 +197,7 @@ input::placeholder,textarea::placeholder{color:#8795a4;font-weight:400}
 .concept-total.above{color:#226a4e}
 @media(max-width:600px){.criteria-reference{padding:21px 19px}.criteria-legend{display:grid}.criteria-band{justify-content:flex-start}}
 @media print{.criteria-reference{border:0;max-width:none;padding:0}.criteria-appendix{break-before:page;page-break-before:always;margin-top:0}.criteria-section{break-inside:avoid-page}.criteria-band,.score-pill,.heat-cell{print-color-adjust:exact;-webkit-print-color-adjust:exact}}
+@media print{.criteria-appendix .criteria-intro{padding-bottom:10px}.criteria-appendix .criteria-intro h2{font-size:15pt;margin-bottom:5px}.criteria-appendix .criteria-intro p{font-size:9pt;margin-bottom:4px}.criteria-appendix .criteria-legend{margin-top:9px}.criteria-appendix .criteria-band{min-height:0;padding:4px 6px;font-size:7.5pt}.criteria-appendix .criteria-sections{display:block;columns:2;column-gap:18px}.criteria-appendix .criteria-section{break-inside:avoid-column;padding:10px 0}.criteria-appendix .criteria-section h3{font-size:10pt;margin-bottom:5px}.criteria-appendix .criteria-section ul{font-size:8pt;line-height:1.25;gap:3px;padding-left:15px}}
 
 @media(max-width:760px){.mobile-nav{justify-content:flex-start;overflow-x:auto;scrollbar-width:thin}.mobile-nav a,.mobile-nav button{flex:1 0 66px;min-width:66px;padding:4px 2px;text-align:center}.mobile-nav a span,.mobile-nav button{line-height:1.15}}
 
