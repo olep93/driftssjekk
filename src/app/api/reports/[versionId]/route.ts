@@ -1,6 +1,28 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { apiClient, apiError, rpcError } from "@/lib/api";
+import { areas } from "@/lib/scoring";
+
+export async function GET(_request: Request, { params }: { params: Promise<{ versionId: string }> }) {
+  const auth = await apiClient(); if (!auth) return apiError("Ikke innlogget",401);
+  const { versionId } = await params;
+  if (!z.uuid().safeParse(versionId).success) return apiError("Ugyldig rapport");
+  const [{data:version},{data:rows},{data:imageRows}] = await Promise.all([
+    auth.supabase.from("report_versions").select("state,lock_version,visit_date,summary,updated_at").eq("id",versionId).maybeSingle(),
+    auth.supabase.from("area_assessments").select("area_key,score_quarters,comment,needs_follow_up").eq("version_id",versionId),
+    auth.supabase.from("report_images").select("id,area_key,caption,object_path").eq("version_id",versionId).order("sort_order"),
+  ]);
+  if (!version) return apiError("Rapporten finnes ikke eller du mangler tilgang",404);
+  const images = await Promise.all((imageRows || []).map(async (image) => {
+    const {data} = await auth.supabase.storage.from("report-images").createSignedUrl(image.object_path,300);
+    return {id:image.id,area_key:image.area_key,caption:image.caption,url:data?.signedUrl || ""};
+  }));
+  return NextResponse.json({state:version.state,lockVersion:version.lock_version,updatedAt:version.updated_at,
+    fields:{visitDate:version.visit_date || "",summary:version.summary || "",areas:Object.fromEntries(areas.map((area) => {
+      const row=rows?.find((item) => item.area_key === area.key);
+      return [area.key,{score_quarters:row?.score_quarters ?? null,comment:row?.comment || "",needs_follow_up:row?.needs_follow_up || false}];
+    }))},images});
+}
 
 const area = z.object({ score_quarters: z.number().int().min(4).max(40).nullable(), comment: z.string().max(10000), needs_follow_up: z.boolean() });
 const schema = z.object({ lockVersion: z.number().int().positive(), visitDate: z.iso.date().nullable(), summary: z.string().max(20000), areas: z.record(z.enum(["drive_in","store","outdoor","goods_receiving"]), area) });

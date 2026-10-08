@@ -13,6 +13,7 @@ export default function AdminControls({ coops, stores, memberships, profiles }: 
 }) {
   const router = useRouter();
   const [coop, setCoop] = useState(coops.find((item) => item.name === "Coop Sørøst")?.id || coops[0]?.id || "");
+  const [userCoop, setUserCoop] = useState(coops.find((item) => item.name === "Coop Sørøst")?.id || coops[0]?.id || "");
   const [storeName, setStoreName] = useState("");
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -41,7 +42,7 @@ export default function AdminControls({ coops, stores, memberships, profiles }: 
     event.preventDefault(); setBusy(true); setMessage("");
     try {
       const response = await fetch("/api/invitations", { method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cooperativeId: coop, storeId: role === "store_manager" ? storeId : null,
+        body: JSON.stringify({ cooperativeId: userCoop, storeId: role === "store_manager" ? storeId : null,
           storeIds: role === "operations" && !allStores ? selectedStores : [],
           role, email, name, password: existingAccount ? undefined : password }) });
       const result = await response.json();
@@ -65,7 +66,7 @@ export default function AdminControls({ coops, stores, memberships, profiles }: 
   }
 
   return <>
-    <div className="filters" style={{ marginBottom: 20 }}><label>Samvirkelag
+    <div className="filters" style={{ marginBottom: 20 }}><label>Vis samvirkelag
       <select value={coop} onChange={(event) => { setCoop(event.target.value); setStoreId(""); setSelectedStores([]); }}>
         {coops.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
       </select></label></div>
@@ -79,23 +80,26 @@ export default function AdminControls({ coops, stores, memberships, profiles }: 
       <section className="panel" style={{ marginTop: 0 }}><h2>Opprett bruker og tildel tilgang</h2>
         <p className="muted small">Nye brukere får et midlertidig passord som du deler direkte. E-post sendes ikke automatisk ennå.</p>
         <form className="form-stack" onSubmit={createUser}>
+          <label>1. Velg S-lag (samvirkelag)<select required value={userCoop} onChange={(event) => { setUserCoop(event.target.value); setStoreId(""); setSelectedStores([]); }}>
+            {coops.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
+          </select></label>
           <label>Navn<input value={name} onChange={(event) => setName(event.target.value)} required minLength={2} /></label>
           <label>E-post<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required autoComplete="off" /></label>
           <label className="checkbox-label"><input type="checkbox" checked={existingAccount} onChange={(event) => { setExistingAccount(event.target.checked); setPassword(""); }} /> Kontoen finnes allerede</label>
           {!existingAccount && <label>Midlertidig passord<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} required minLength={12} maxLength={128} autoComplete="new-password" /></label>}
-          <label>Rolle<select value={role} onChange={(event) => { setRole(event.target.value); setStoreId(""); }}>
+          <label>2. Velg rolle<select value={role} onChange={(event) => { setRole(event.target.value); setStoreId(""); }}>
             <option value="store_manager">Varehussjef</option>
             <option value="operations">Driftssjef</option>
             <option value="cooperative_admin">Samvirkelagsadministrator</option>
           </select></label>
-          {role === "store_manager" && <label>Varehus<select required value={storeId} onChange={(event) => setStoreId(event.target.value)}>
+          {role === "store_manager" && <label>3. Velg varehus i dette S-laget<select required value={storeId} onChange={(event) => setStoreId(event.target.value)}>
             <option value="">Velg varehus</option>
-            {stores.filter((store) => store.cooperative_id === coop && store.active).map((store) => <option key={store.id} value={store.id}>{store.name}</option>)}
+            {stores.filter((store) => store.cooperative_id === userCoop && store.active).map((store) => <option key={store.id} value={store.id}>{store.name}</option>)}
           </select></label>}
           {role === "operations" && <fieldset className="access-scope"><legend>Tilgang som driftssjef</legend>
-            <label className="checkbox-label"><input type="checkbox" checked={allStores} onChange={(event) => { setAllStores(event.target.checked); setSelectedStores([]); }} /> Alle varehus i samvirkelaget</label>
+            <label className="checkbox-label"><input type="checkbox" checked={allStores} onChange={(event) => { setAllStores(event.target.checked); setSelectedStores([]); }} /> Alle nåværende og fremtidige varehus i {coops.find((item) => item.id === userCoop)?.name}</label>
             {!allStores && <><p className="muted small">Velg varehus driftssjefen kan se og gjennomføre konseptsjekk for.</p>
-              {stores.filter((store) => store.cooperative_id === coop && store.active).map((store) => <label className="checkbox-label" key={store.id}>
+              {stores.filter((store) => store.cooperative_id === userCoop && store.active).map((store) => <label className="checkbox-label" key={store.id}>
                 <input type="checkbox" checked={selectedStores.includes(store.id)} onChange={(event) => setSelectedStores((current) => event.target.checked ? [...current, store.id] : current.filter((id) => id !== store.id))} /> {store.name}
               </label>)}
             </>}
