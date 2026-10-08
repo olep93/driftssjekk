@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { BarChart3, CalendarDays, ClipboardList, Warehouse, FileText, ListChecks, Settings, LogOut, BookOpen } from "lucide-react";
+import { BarChart3, CalendarDays, ClipboardList, Warehouse, FileText, ListChecks, Settings, LogOut, BookOpen, UserRound } from "lucide-react";
 import { defaultCooperativeId, getContext, isFullOperations, isOperations } from "@/lib/auth";
 import { MobileNavigation, StartNewMenu } from "@/components/app-navigation";
 
@@ -23,6 +23,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     ...(fullOperations ? [{ href: "/runder", label: "Konseptsjekkrunder", icon: ClipboardList }] : []),
     { href: "/samlinger", label: "Samlinger", icon: CalendarDays },
     { href: "/kriterier", label: "Kriterier", icon: BookOpen },
+    { href: "/min-konto", label: "Min konto", icon: UserRound },
     ...(admin ? [{ href: "/administrasjon", label: "Administrasjon", icon: Settings }] : []),
   ];
   const { data: cooperative } = await supabase.from("cooperatives").select("name").eq("id",defaultCooperativeId(memberships)!).maybeSingle();
@@ -35,7 +36,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <nav aria-label="Hovedmeny">{primaryLinks.map(({ href, label, icon: Icon }) => <Link href={href} key={href}><Icon size={19} strokeWidth={1.9}/><span>{label}</span></Link>)}</nav>
       <div className="sidebar-section-label">FLERE SIDER</div>
       <nav aria-label="Flere sider">{secondaryLinks.map(({ href, label, icon: Icon }) => <Link href={href} key={href}><Icon size={19} strokeWidth={1.9}/><span>{label}</span></Link>)}</nav>
-      <div className="sidebar-bottom"><div className="user-avatar">{name.charAt(0).toUpperCase()}</div><div className="user-name"><strong>{name}</strong><small>{systemAdmin ? "Systemadministrator" : admin && operations ? "Administrator og drift" : operations ? "Driftssjef" : admin ? "Administrator" : "Varehussjef"}</small></div><form action={signOut}><button className="logout-button" title="Logg ut" aria-label="Logg ut"><LogOut size={18}/><span>Logg ut</span></button></form></div>
+      <div className="sidebar-bottom"><Link href="/min-konto" className="account-link" aria-label="Min konto"><div className="user-avatar">{name.charAt(0).toUpperCase()}</div><div className="user-name"><strong>{name}</strong><small>{systemAdmin ? "Systemadministrator" : admin && operations ? "Administrator og drift" : operations ? "Driftssjef" : admin ? "Administrator" : "Varehussjef"}</small></div></Link><form action={signOut}><button className="logout-button" title="Logg ut" aria-label="Logg ut"><LogOut size={18}/><span>Logg ut</span></button></form></div>
     </aside>
     <div className="mobile-top mobile-top-auth"><Link href="/oversikt" className="brand"><span className="brand-icon">D</span><span>DRIFTSSJEKK</span></Link><form action={signOut}><button className="mobile-logout" type="submit"><LogOut size={17}/><span>Logg ut</span></button></form></div>
     <main className="main-content">{children}</main>

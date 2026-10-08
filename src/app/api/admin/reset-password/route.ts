@@ -5,7 +5,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 const schema = z.object({
   email: z.email().trim().toLowerCase(),
-  password: z.string().min(12).max(128),
+  password: z.string().min(8).max(128),
 });
 
 export async function POST(request: Request) {
@@ -19,7 +19,7 @@ export async function POST(request: Request) {
     return apiError("Bare systemadministrator kan tilbakestille passord", 403);
 
   const parsed = schema.safeParse(await request.json().catch(() => null));
-  if (!parsed.success) return apiError("Kontroller e-postadresse og midlertidig passord (minst 12 tegn).");
+  if (!parsed.success) return apiError("Kontroller e-postadresse og midlertidig passord (minst 8 tegn).");
 
   try {
     const admin = createAdminClient();

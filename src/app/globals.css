@@ -113,6 +113,8 @@ input::placeholder,textarea::placeholder{color:#8795a4;font-weight:400}
 @media(max-width:760px){.mobile-nav{justify-content:flex-start;overflow-x:auto;scrollbar-width:thin}.mobile-nav a,.mobile-nav button{flex:1 0 66px;min-width:66px;padding:4px 2px;text-align:center}.mobile-nav a span,.mobile-nav button{line-height:1.15}}
 
 .sidebar-bottom .logout-button{display:flex;align-items:center;gap:6px;white-space:nowrap;font-size:.7rem;font-weight:700}
+.sidebar-bottom .account-link{display:flex;align-items:center;gap:9px;min-width:0;flex:1}
+.sidebar-bottom .account-link:hover .user-name strong{color:#fff}
 .sidebar-bottom .logout-button:hover,.mobile-logout:hover{color:#fff}
 @media(max-width:760px){.mobile-top-auth{display:flex;align-items:center;justify-content:space-between;gap:12px}.mobile-logout{display:flex;align-items:center;gap:6px;padding:8px;border:0;background:none;color:#dce6ee;font-size:.78rem;font-weight:700;white-space:nowrap}}
 

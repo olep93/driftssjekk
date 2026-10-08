@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
-import { BarChart3, BookOpen, CalendarDays, ClipboardList, FileText, ListChecks, MoreHorizontal, Plus, Settings, UserPlus, Warehouse, X } from "lucide-react";
+import { BarChart3, BookOpen, CalendarDays, ClipboardList, FileText, ListChecks, MoreHorizontal, Plus, Settings, UserPlus, UserRound, Warehouse, X } from "lucide-react";
 
 type Permissions = { operations: boolean; fullOperations?: boolean; monthly: boolean; admin?: boolean; storeId?: string };
 
@@ -55,6 +55,7 @@ export function MobileNavigation(props: Permissions) {
     { href: "/samlinger", label: "Samlinger", icon: CalendarDays },
     { href: "/oppfolging", label: "Oppfølging", icon: ListChecks },
     { href: "/kriterier", label: "Kriterier", icon: BookOpen },
+    { href: "/min-konto", label: "Min konto", icon: UserRound },
     ...(props.admin ? [{ href: "/administrasjon", label: "Administrasjon", icon: Settings }] : []),
   ];
   return <>

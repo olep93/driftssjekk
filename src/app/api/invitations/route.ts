@@ -10,14 +10,14 @@ const schema = z.object({
   role: z.enum(["operations", "store_manager", "cooperative_admin"]),
   email: z.email().trim().toLowerCase(),
   name: z.string().trim().min(2).max(150),
-  password: z.string().min(12).max(128).optional(),
+  password: z.string().min(8).max(128).optional(),
 });
 
 export async function POST(request: Request) {
   const auth = await apiClient();
   if (!auth) return apiError("Ikke innlogget", 401);
   const parsed = schema.safeParse(await request.json().catch(() => null));
-  if (!parsed.success) return apiError("Kontroller navn, e-post og passord (minst 12 tegn).");
+  if (!parsed.success) return apiError("Kontroller navn, e-post og passord (minst 8 tegn).");
   const { cooperativeId, storeId, role, email, name, password } = parsed.data;
   const selectedStores = [...new Set(parsed.data.storeIds || [])];
 
@@ -45,11 +45,10 @@ export async function POST(request: Request) {
     let userId = existingId;
     let created = false;
     if (!userId) {
-      if (!password) return apiError("Nye brukere må få et midlertidig passord på minst 12 tegn.");
+      if (!password) return apiError("Nye brukere må få et passord på minst 8 tegn.");
       const { data, error } = await admin.auth.admin.createUser({
         email, password, email_confirm: true,
         user_metadata: { display_name: name },
-        app_metadata: { must_change_password: true },
       });
       if (error || !data.user) return apiError(error?.message || "Kunne ikke opprette brukeren.", 409);
       userId = data.user.id;

@@ -9,6 +9,7 @@ Oppdatert 8. oktober 2026.
 - `ole.kristiansen@coop.no` er systemadministrator med tilgang til samvirkelagene, og er varehussjef for Obs Bygg Tønsberg. Kontoen kan lage både uanmeldt konseptsjekk og månedlig driftsgjennomgang i Tønsberg. Systemadministrator kan slette testene etterpå.
 - Driftssjefer kan tildeles alle eller valgte varehus i et samvirkelag. Oppgaver fra publiserte rapporter vises for tilhørende varehus, som kan svare med tekst, status og bilde.
 - Brukeropprettelse velger S-lag før rolle og varehus. Driftssjef får som standard alle nåværende og fremtidige varehus i valgt S-lag.
+- Startpassord på minst åtte tegn kan brukes videre. Brukeren kan selv endre passord under **Min konto** etter innlogging.
 - Systemadministrator kan tilbakestille passordet til en eksisterende bruker med et midlertidig passord. Brukeren må velge eget passord ved neste innlogging. Dette krever ikke SMTP.
 - To driftssjefer kan arbeide i samme konseptsjekkkladd. Ulike skjemafelt flettes ved samtidig lagring; ved endring i samme felt må brukeren velge hvilken utgave som beholdes. Bilder synkroniseres hvert tiende sekund når skjemaet ikke har ulagrede tekstendringer.
 - Bilder kan markeres i nettleseren med rød sirkel, rød penn eller gul merketusj før opplasting. Markeringen er en del av det lagrede bildet og blir med i PDF og PowerPoint.

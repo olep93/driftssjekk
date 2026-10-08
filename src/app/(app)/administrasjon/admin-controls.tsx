@@ -52,7 +52,7 @@ export default function AdminControls({ coops, stores, memberships, profiles, sy
       const result = await response.json();
       if (response.ok) {
         setMessage(result.created
-          ? "Brukeren er opprettet. Del det midlertidige passordet direkte med brukeren. Passordet må byttes ved første innlogging."
+          ? "Brukeren er opprettet. Del startpassordet direkte med brukeren. Det kan brukes videre, eller endres under Min konto."
           : result.assigned ? "Eksisterende bruker har fått tilgang. Det tidligere passordet er uendret."
             : "Brukeren hadde allerede denne tilgangen.");
         setName(""); setEmail(""); setPassword(""); setSelectedStores([]); router.refresh();
@@ -100,7 +100,7 @@ export default function AdminControls({ coops, stores, memberships, profiles, sy
         </form>
       </section>
       <section className="panel" style={{ marginTop: 0 }}><h2>Opprett bruker og tildel tilgang</h2>
-        <p className="muted small">Nye brukere får et midlertidig passord som du deler direkte. E-post sendes ikke automatisk ennå.</p>
+        <p className="muted small">Sett et startpassord på minst 8 tegn og del det direkte. Brukeren kan endre det under Min konto. E-post sendes ikke automatisk.</p>
         <form className="form-stack" onSubmit={createUser}>
           <label>1. Velg S-lag (samvirkelag)<select required value={userCoop} onChange={(event) => { setUserCoop(event.target.value); setStoreId(""); setSelectedStores([]); }}>
             {coops.map((item) => <option key={item.id} value={item.id}>{item.name}</option>)}
@@ -108,7 +108,7 @@ export default function AdminControls({ coops, stores, memberships, profiles, sy
           <label>Navn<input value={name} onChange={(event) => setName(event.target.value)} required minLength={2} /></label>
           <label>E-post<input type="email" value={email} onChange={(event) => setEmail(event.target.value)} required autoComplete="off" /></label>
           <label className="checkbox-label"><input type="checkbox" checked={existingAccount} onChange={(event) => { setExistingAccount(event.target.checked); setPassword(""); }} /> Kontoen finnes allerede</label>
-          {!existingAccount && <label>Midlertidig passord<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} required minLength={12} maxLength={128} autoComplete="new-password" /></label>}
+          {!existingAccount && <label>Startpassord<input type="password" value={password} onChange={(event) => setPassword(event.target.value)} required minLength={8} maxLength={128} autoComplete="new-password" /></label>}
           <label>2. Velg rolle<select value={role} onChange={(event) => { setRole(event.target.value); setStoreId(""); }}>
             <option value="store_manager">Varehussjef</option>
             <option value="operations">Driftssjef</option>
@@ -135,7 +135,7 @@ export default function AdminControls({ coops, stores, memberships, profiles, sy
       <p className="muted small">Du setter et nytt midlertidig passord. Ingen e-post sendes fra systemet, og brukeren må velge sitt eget passord ved neste innlogging.</p>
       <form className="form-stack" onSubmit={resetUserPassword}>
         <label>Brukerens e-post<input type="email" required autoComplete="off" value={resetEmail} onChange={(event) => setResetEmail(event.target.value)} /></label>
-        <label>Nytt midlertidig passord<input type="password" required minLength={12} maxLength={128} autoComplete="new-password" value={resetPassword} onChange={(event) => setResetPassword(event.target.value)} /></label>
+        <label>Nytt midlertidig passord<input type="password" required minLength={8} maxLength={128} autoComplete="new-password" value={resetPassword} onChange={(event) => setResetPassword(event.target.value)} /></label>
         <button className="button primary" disabled={resetBusy}>{resetBusy ? "Tilbakestiller …" : "Tilbakestill passord"}</button>
       </form>
       {resetMessage && <p role="status" className="feedback" style={{marginTop:16}}>{resetMessage}</p>}

@@ -3,13 +3,15 @@ import { z } from "zod";
 import { apiClient, apiError } from "@/lib/api";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-const schema = z.object({ password: z.string().min(12).max(128) });
+const schema = z.object({ password: z.string().min(8).max(128) });
 
 export async function POST(request: Request) {
   const auth = await apiClient({ allowTemporaryPassword: true });
   if (!auth) return apiError("Ikke innlogget", 401);
+  if (request.headers.get("origin") !== new URL(request.url).origin)
+    return apiError("Ugyldig forespørsel", 403);
   const parsed = schema.safeParse(await request.json().catch(() => null));
-  if (!parsed.success) return apiError("Passordet må ha minst 12 tegn.");
+  if (!parsed.success) return apiError("Passordet må ha minst 8 tegn.");
   const { data: identity, error: identityError } = await auth.supabase.auth.getUser();
   if (identityError || !identity.user) return apiError("Økten er utløpt. Åpne lenken på nytt.", 401);
   const { error } = await auth.supabase.auth.updateUser({ password: parsed.data.password });
