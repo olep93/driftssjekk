@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { averageFromQuarters, formatScore, quartersFromInput, totalFromQuarters } from "./scoring";
+import { averageFromQuarters, formatDate, formatScore, quartersFromInput, totalFromQuarters } from "./scoring";
 
 describe("karakterberegning", () => {
   it("godtar kun kvartsteg innenfor skalaen", () => {
@@ -18,5 +18,13 @@ describe("karakterberegning", () => {
     expect(averageFromQuarters([24])).toBe(6);
     expect(averageFromQuarters([24, 28])).toBe(6.5);
     expect(averageFromQuarters([])).toBeNull();
+  });
+});
+
+describe("datovisning", () => {
+  it("viser både besøksdato og opprettelsestid uten å feile", () => {
+    expect(formatDate("2026-10-09")).toContain("2026");
+    expect(formatDate("2026-10-09T11:12:00.000Z")).toContain("2026");
+    expect(formatDate("ugyldig dato")).toBe("Ikke satt");
   });
 });

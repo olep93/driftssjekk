@@ -31,5 +31,7 @@ export function formatScore(value: number | null | undefined): string {
 }
 export function formatDate(value: string | null | undefined): string {
   if (!value) return "Ikke satt";
-  return new Intl.DateTimeFormat("nb-NO", { timeZone: "Europe/Oslo", day: "numeric", month: "short", year: "numeric" }).format(new Date(`${value}T12:00:00Z`));
+  const date = new Date(/^\d{4}-\d{2}-\d{2}$/.test(value) ? `${value}T12:00:00Z` : value);
+  if (Number.isNaN(date.getTime())) return "Ikke satt";
+  return new Intl.DateTimeFormat("nb-NO", { timeZone: "Europe/Oslo", day: "numeric", month: "short", year: "numeric" }).format(date);
 }
