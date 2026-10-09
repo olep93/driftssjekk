@@ -9,9 +9,9 @@ type Snapshot = { kind:string;store_name:string;cooperative_name:string;round_ti
 const navy=rgb(.07,.15,.25),orange=rgb(.91,.46,.15),muted=rgb(.39,.45,.52),line=rgb(.86,.89,.91),red=rgb(.64,.26,.24),green=rgb(.13,.42,.31);
 export const reportPdfTemplateVersion = "area-flow-20261008";
 export function reportPdfPath(versionId:string){return `reports/${versionId}-${reportPdfTemplateVersion}.pdf`;}
-function printable(value:string){return value.replace(/[–—−]/g,"-").replace(/[“”]/g,'"').replace(/[’]/g,"'").replace(/[^\u0020-\u00ff\n]/g,"?");}
+export function printable(value:string){return value.replace(/[–—−]/g,"-").replace(/[“”]/g,'"').replace(/[’]/g,"'").replace(/[^\u0020-\u00ff\n]/g,"?");}
 function conceptColor(value:number|null){const band=conceptBand(value);return band==="below"?red:band==="above"?green:navy;}
-function splitLines(text:string,font:PDFFont,size:number,maxWidth:number){
+export function splitLines(text:string,font:PDFFont,size:number,maxWidth:number){
   const lines:string[]=[];
   for(const paragraph of printable(text).split("\n")){
     if(!paragraph){lines.push("");continue;}

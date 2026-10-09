@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getContext } from "@/lib/auth";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { areas, formatDate } from "@/lib/scoring";
 import { PageHeading, Status } from "@/components/ui";
 import TaskReplyForm from "./reply-form";
@@ -23,10 +24,12 @@ export default async function ActionDetail({ params }: { params: Promise<{ actio
   ]);
   if (!report) notFound();
   const { data: store } = await ctx.supabase.from("stores").select("name").eq("id", report.store_id).maybeSingle();
-  const imageUrls = await Promise.all((images || []).map(async (item) => {
-    const { data } = await ctx.supabase.storage.from("action-images").createSignedUrl(item.object_path, 300);
-    return { ...item, url: data?.signedUrl || "" };
-  }));
+  // The action-images bucket has no user read policy. The rows above are read under RLS, so only
+  // images the user may see get signed here with the service client.
+  const { data: signed } = images?.length
+    ? await createAdminClient().storage.from("action-images").createSignedUrls(images.map((item) => item.object_path), 300)
+    : { data: [] };
+  const imageUrls = (images || []).map((item) => ({ ...item, url: signed?.find((entry) => entry.path === item.object_path)?.signedUrl || "" }));
   const areaName = areas.find((item) => item.key === action.area_key)?.label || "Generelt";
   const initial = imageUrls.filter((item) => !item.update_id);
   return <><div className="breadcrumb"><Link href="/oppfolging">Oppfølging</Link> / {store?.name || "Varehus"}</div>
