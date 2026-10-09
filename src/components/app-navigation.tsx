@@ -12,9 +12,9 @@ function createLinks({ operations, fullOperations, monthly, admin, storeId }: Pe
   return [
     ...(operations ? [{ href: `/rapporter/ny?type=inspection${store}`, label: "Uanmeldt konseptsjekk", detail: "Vurder et varehus", icon: ClipboardList }] : []),
     ...(monthly ? [{ href: `/rapporter/ny?type=self_check${store}`, label: "Månedlig driftsgjennomgang", detail: "Vurder varehuset for intern progresjon", icon: FileText }] : []),
-    ...(fullOperations && !storeId ? [{ href: "/runder/ny", label: "Konseptsjekkrunde", detail: "Planlegg flere varehusbesøk", icon: Plus }] : []),
-    ...(operations && !storeId ? [{ href: "/samlinger/ny", label: "Samling for varehussjefer", detail: "Inviter til en felles konseptrunde", icon: CalendarDays }] : []),
-    ...(admin && !storeId ? [{ href: "/administrasjon", label: "Ny bruker", detail: "Opprett bruker og tildel tilgang", icon: UserPlus }] : []),
+    ...(fullOperations ? [{ href: "/runder/ny", label: "Konseptsjekkrunde", detail: "Planlegg flere varehusbesøk", icon: Plus }] : []),
+    ...(operations ? [{ href: "/samlinger/ny", label: "Samling for varehussjefer", detail: "Inviter til en felles konseptrunde", icon: CalendarDays }] : []),
+    ...(admin ? [{ href: "/administrasjon", label: "Ny bruker", detail: "Opprett bruker og tildel tilgang", icon: UserPlus }] : []),
   ];
 }
 

@@ -1,20 +1,40 @@
 import Link from "next/link";
 import { ArrowUpRight, ClipboardCheck, TrendingUp, Warehouse, ListChecks } from "lucide-react";
-import { defaultCooperativeId, getContext, isFullOperations, isOperations } from "@/lib/auth";
+import { canOperateStore, defaultCooperativeId, getContext, isFullOperations, isOperations } from "@/lib/auth";
 import { loadCore, scoreFor } from "@/lib/data";
 import { formatDate, formatScore, areas } from "@/lib/scoring";
 import { Empty, PageHeading, Score, Status } from "@/components/ui";
 import { conceptBand } from "@/lib/criteria";
 import { StartNewMenu } from "@/components/app-navigation";
 import { reportKindLabel } from "@/lib/report-kind";
+import { focusedStoreId, selectedStoreId } from "@/lib/store-focus";
 
-export default async function Overview({ searchParams }: { searchParams: Promise<{ coop?: string; round?: string }> }) {
+export default async function Overview({ searchParams }: { searchParams: Promise<{ coop?: string; round?: string; store?: string }> }) {
   const params = await searchParams;
   const ctx = await getContext();
-  const cooperativeId = ctx.memberships.some((m) => m.cooperative_id === params.coop) ? params.coop! : defaultCooperativeId(ctx.memberships)!;
+  const { data: focusCandidates } = isOperations(ctx.memberships) ? await ctx.supabase.from("stores").select("id,cooperative_id,name,active").eq("active", true) : { data: [] };
+  const savedFocus = await focusedStoreId(focusCandidates || [], ctx.memberships);
+  const requestedFocus = params.store && params.store !== "all" ? params.store : params.store === "all" ? null : savedFocus;
+  const focusStore = (focusCandidates || []).find((store) => store.id === requestedFocus && canOperateStore(ctx.memberships, store.cooperative_id, store.id));
+  const cooperativeId = ctx.memberships.some((m) => m.cooperative_id === params.coop) ? params.coop! : focusStore?.cooperative_id || defaultCooperativeId(ctx.memberships)!;
   const operations = isOperations(ctx.memberships, cooperativeId);
   const canMonthly = ctx.memberships.some((m) => m.role === "store_manager" && m.cooperative_id === cooperativeId);
   const { stores, rounds, reports, versions, areas: assessments, actions } = await loadCore(ctx.supabase, cooperativeId);
+  const focused = await focusedStoreId(stores, ctx.memberships);
+  const selectedStore = operations ? stores.find((store) => store.id === selectedStoreId(params.store, focused, stores)) : undefined;
+  if (selectedStore) {
+    const storeReports = reports.filter((report) => report.store_id === selectedStore.id && !report.archived_at);
+    const published = storeReports.filter((report) => report.current_version_id && !report.withdrawn_at);
+    const drafts = storeReports.flatMap((report) => versions.filter((version) => version.report_id === report.id && version.state === "draft").map((version) => ({ report, version })));
+    const openActions = actions.filter((action) => action.status !== "done" && storeReports.some((report) => report.id === action.report_id));
+    const latestConcept = published.find((report) => report.kind === "inspection");
+    const latestMonthly = published.find((report) => report.kind === "self_check" && !report.event_id);
+    return <><PageHeading eyebrow="Varehus i fokus" title={selectedStore.name} description="Pågående arbeid, rapporter og oppgaver for dette varehuset."><Link className="button" href={`/varehus/${selectedStore.id}`}>Varehusside</Link><StartNewMenu operations={operations} fullOperations={isFullOperations(ctx.memberships, cooperativeId)} monthly={canMonthly} storeId={selectedStore.id}/></PageHeading>
+      <div className="grid-4"><div className="stat-card"><span className="label">Pågående rapporter</span><strong className="value">{drafts.length}</strong><Link className="panel-link" href={`/rapporter?view=active&store=${selectedStore.id}`}>Se kladder</Link></div><div className="stat-card"><span className="label">Siste konseptsjekk</span><strong className="value">{formatScore(scoreFor(latestConcept, versions, assessments))}</strong><span className="hint">{formatDate(versions.find((version) => version.id === latestConcept?.current_version_id)?.visit_date)}</span></div><div className="stat-card"><span className="label">Siste driftsgjennomgang</span><strong className="value">{formatScore(scoreFor(latestMonthly, versions, assessments))}</strong><span className="hint">Intern progresjon</span></div><div className="stat-card"><span className="label">Åpne oppgaver</span><strong className="value">{openActions.length}</strong><Link className="panel-link" href={`/oppfolging?store=${selectedStore.id}`}>Se oppgaver</Link></div></div>
+      <div className="grid-2"><section className="panel"><div className="panel-header"><h2>Pågående</h2><Link className="panel-link" href={`/rapporter?view=active&store=${selectedStore.id}`}>Se alle</Link></div>{drafts.slice(0, 5).map(({report, version}) => <Link className="list-card" href={`/rapporter/rediger/${version.id}`} key={version.id}><div><h3>{reportKindLabel(report.kind, report.event_id)}</h3><p>Fortsett kladd · {formatDate(version.visit_date || report.created_at)}</p></div><ArrowUpRight size={18}/></Link>)}{!drafts.length && <p className="muted">Ingen pågående rapporter.</p>}</section><section className="panel"><div className="panel-header"><h2>Åpne oppgaver</h2><Link className="panel-link" href={`/oppfolging?store=${selectedStore.id}`}>Se alle</Link></div>{openActions.slice(0, 5).map((action) => <Link className="list-card" href={`/oppfolging/${action.id}`} key={action.id}><div><h3>{action.description}</h3><p>Frist {formatDate(action.due_date)}</p></div><Status value={action.status}/></Link>)}{!openActions.length && <p className="muted">Ingen åpne oppgaver.</p>}</section></div>
+      <section className="panel"><div className="panel-header"><h2>Siste rapporter</h2><Link className="panel-link" href={`/rapporter?view=history&store=${selectedStore.id}`}>Se historikk</Link></div>{published.slice(0, 5).map((report) => <Link className="list-card" href={`/rapporter/${report.id}`} key={report.id}><div><h3>{reportKindLabel(report.kind, report.event_id)}</h3><p>{formatDate(versions.find((version) => version.id === report.current_version_id)?.visit_date)}</p></div><Score value={scoreFor(report, versions, assessments)} neutral={report.kind === "self_check"}/></Link>)}{!published.length && <p className="muted">Ingen publiserte rapporter.</p>}</section>
+    </>;
+  }
   const { data: upcomingEvents } = await ctx.supabase.from("events").select("id,title,starts_at,location_store_id").eq("status","planned").order("starts_at",{ascending:true}).limit(3);
   const { data: cooperatives } = await ctx.supabase.from("cooperatives").select("id,name");
   const currentRound = rounds.find((r) => r.id === params.round) || rounds[0];
