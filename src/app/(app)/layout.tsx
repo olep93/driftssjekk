@@ -28,25 +28,28 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     { href: "/min-konto", label: "Min konto", icon: UserRound },
     ...(admin ? [{ href: "/administrasjon", label: "Administrasjon", icon: Settings }] : []),
   ];
-  const { data: cooperative } = await supabase.from("cooperatives").select("name").eq("id",defaultCooperativeId(memberships)!).maybeSingle();
+  const { data: cooperatives } = await supabase.from("cooperatives").select("id,name");
+  const cooperative = cooperatives?.find((item) => item.id === defaultCooperativeId(memberships));
   const { data: availableStores } = operations ? await supabase.from("stores").select("id,cooperative_id,name,active").eq("active",true).order("name") : { data: [] };
   const focusStores = operationStores(availableStores || [], memberships);
   const focusId = await focusedStoreId(focusStores, memberships);
+  const monthlyStoreId = memberships.find((member) => member.role === "store_manager")?.store_id || undefined;
+  const storeOptions = focusStores.map((store) => ({ id: store.id, name: store.name, cooperativeName: cooperatives?.find((item) => item.id === store.cooperative_id)?.name || "Samvirkelag" }));
   return <div className="app-shell">
     <aside className="sidebar">
       <Link href="/oversikt" className="brand"><span className="brand-icon">D</span><span>DRIFTSSJEKK<small>Arbeidsverktøy</small></span></Link>
       <div className="workspace-label">ARBEIDSOMRÅDE</div>
       <div className="coop-chip"><span className="coop-dot" />{cooperative?.name || "Ditt samvirkelag"}</div>
-      <StoreFocus stores={focusStores} value={focusId}/>
-      <StartNewMenu operations={operations} fullOperations={fullOperations} monthly={monthly} admin={admin} storeId={focusId || undefined} sidebar />
+      <StoreFocus key={focusId || "all"} stores={storeOptions} value={focusId}/>
+      <StartNewMenu operations={operations} fullOperations={fullOperations} monthly={monthly} monthlyStoreId={monthlyStoreId} admin={admin} storeId={focusId || undefined} sidebar />
       <nav aria-label="Hovedmeny">{primaryLinks.map(({ href, label, icon: Icon }) => <Link href={href} key={href}><Icon size={19} strokeWidth={1.9}/><span>{label}</span></Link>)}</nav>
       <div className="sidebar-section-label">FLERE SIDER</div>
       <nav aria-label="Flere sider">{secondaryLinks.map(({ href, label, icon: Icon }) => <Link href={href} key={href}><Icon size={19} strokeWidth={1.9}/><span>{label}</span></Link>)}</nav>
       <div className="sidebar-bottom"><Link href="/min-konto" className="account-link" aria-label="Min konto"><div className="user-avatar">{name.charAt(0).toUpperCase()}</div><div className="user-name"><strong>{name}</strong><small>{systemAdmin ? "Systemadministrator" : admin && operations ? "Administrator og drift" : operations ? "Driftssjef" : admin ? "Administrator" : "Varehussjef"}</small></div></Link><form action={signOut}><button className="logout-button" title="Logg ut" aria-label="Logg ut"><LogOut size={18}/><span>Logg ut</span></button></form></div>
     </aside>
     <div className="mobile-top mobile-top-auth"><Link href="/oversikt" className="brand"><span className="brand-icon">D</span><span>DRIFTSSJEKK</span></Link><form action={signOut}><button className="mobile-logout" type="submit"><LogOut size={17}/><span>Logg ut</span></button></form></div>
-    {focusStores.length > 1 && <div className="mobile-focus-bar"><StoreFocus stores={focusStores} value={focusId} compact/></div>}
+    {focusStores.length > 1 && <div className="mobile-focus-bar"><StoreFocus key={focusId || "all"} stores={storeOptions} value={focusId} compact/></div>}
     <main className="main-content">{children}</main>
-    <MobileNavigation operations={operations} fullOperations={fullOperations} monthly={monthly} admin={admin} storeId={focusId || undefined}/>
+    <MobileNavigation operations={operations} fullOperations={fullOperations} monthly={monthly} monthlyStoreId={monthlyStoreId} admin={admin} storeId={focusId || undefined}/>
   </div>;
 }

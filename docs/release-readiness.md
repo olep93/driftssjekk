@@ -1,6 +1,6 @@
 # Status før pilot og lansering
 
-Oppdatert 8. oktober 2026.
+Oppdatert 9. oktober 2026.
 
 ## Klart for kontrollert prøve
 
@@ -17,12 +17,16 @@ Oppdatert 8. oktober 2026.
 - Driftssjef kan opprette en samling ved ett besøksvarehus og invitere varehussjefer fra egne varehus. Arrangøren fordeler de fire områdene mellom deltakerne. Deltakere ser samlingen ved innlogging og vurderer bare sine tildelte områder med karakterer, tekst og bilder. Når alle har publisert, kan arrangøren laste ned samlet PDF og PowerPoint. Samlingsresultater holdes utenfor både årets varehus og månedlig progresjon. Automatisk e-postinvitasjon er ikke satt opp.
 - PDF og PowerPoint er kontrollert med både stående og liggende testbilder. Kriteriene er komprimert til et vedlegg i konseptsjekkeksportene.
 - Supabase-databasen ligger i Stockholm. Vercel-funksjoner er konfigurert for Stockholm (`arn1`); produksjonsdistribusjonen må verifiseres etter publisering.
+- Driftssjefer kan sette ett varehus i fokus fra sidepanelet eller mobilhodet. Valget huskes mellom sider og avgrenser oversikt, rapporter og oppgaver. Listen er gruppert etter samvirkelag når brukeren har tilgang til flere.
+- **Rapporter** er samlingsstedet for aktive kladder og publiserte rapporter. Fanene **Pågående** og **Historikk** har egne lenker fra varehussiden og fokusert oversikt.
+- Mobilvisningen er gjennomgått i Chrome ved 320 og 400 CSS-piksler for oversikt, rapportliste, rapport, oppfølging, administrasjon, opprettelse og redigering av rapport. Menyer og skjemakontroller holder seg innenfor skjermen i disse kontrollene.
+- En tom testkladd for uanmeldt konseptsjekk i Obs Bygg Tønsberg er opprettet for videre mobiltest. Den er ikke publisert.
 
 ## Før bredere bruk
 
 1. Gjennomfør en ekte test i Tønsberg med bilder fra mobil: delt kladd i to innloggede økter, samtidig redigering av samme felt, bildemerking, publisering, oppgave, svar, PDF, PowerPoint og sletting. Kontroller resultatet på iPhone og Android, også ved svak dekning.
 2. Avtal hvordan administrator deler midlertidige passord trygt med brukerne. `/onsker-tilgang` åpner brukerens e-postprogram uten å lagre en sak. Hvis automatiske invitasjoner, passordlenker eller publiseringsvarsler ønskes senere, må e-posttjenestene settes opp.
-3. Verifiser cron-jobben og Vercel-planen. Jobben er konfigurert hvert tiende minutt; frekvensen må støttes av valgt plan eller en egen jobbkjører.
+3. Verifiser at cron-jobben faktisk kjører i produksjon. Jobben er konfigurert hvert tiende minutt, og Vercel-prosjektet er på Pro-plan.
 4. Kontroller RLS og tilordning med representative driftssjef- og varehussjefkontoer, særlig driftssjefer med utvalgte varehus.
 5. Avklar databehandleravtaler, lagringstid og sikkerhetskopi for både database og bilder. Test gjenoppretting før ordinær lansering.
 6. Kvalitetssikre teksten i vurderingskriteriene mot originaldokumentet. Avklar offisiell visuell profil og eventuelle merkevareelementer.

@@ -5,13 +5,14 @@ import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { BarChart3, BookOpen, CalendarDays, ClipboardList, FileText, ListChecks, MoreHorizontal, Plus, Settings, UserPlus, UserRound, Warehouse, X } from "lucide-react";
 
-type Permissions = { operations: boolean; fullOperations?: boolean; monthly: boolean; admin?: boolean; storeId?: string };
+type Permissions = { operations: boolean; fullOperations?: boolean; monthly: boolean; admin?: boolean; storeId?: string; monthlyStoreId?: string };
 
-function createLinks({ operations, fullOperations, monthly, admin, storeId }: Permissions) {
+function createLinks({ operations, fullOperations, monthly, admin, storeId, monthlyStoreId }: Permissions) {
   const store = storeId ? `&store=${encodeURIComponent(storeId)}` : "";
+  const monthlyStore = monthlyStoreId ? `&store=${encodeURIComponent(monthlyStoreId)}` : "";
   return [
     ...(operations ? [{ href: `/rapporter/ny?type=inspection${store}`, label: "Uanmeldt konseptsjekk", detail: "Vurder et varehus", icon: ClipboardList }] : []),
-    ...(monthly ? [{ href: `/rapporter/ny?type=self_check${store}`, label: "Månedlig driftsgjennomgang", detail: "Vurder varehuset for intern progresjon", icon: FileText }] : []),
+    ...(monthly ? [{ href: `/rapporter/ny?type=self_check${monthlyStore}`, label: "Månedlig driftsgjennomgang", detail: "Vurder eget varehus for intern progresjon", icon: FileText }] : []),
     ...(fullOperations ? [{ href: "/runder/ny", label: "Konseptsjekkrunde", detail: "Planlegg flere varehusbesøk", icon: Plus }] : []),
     ...(operations ? [{ href: "/samlinger/ny", label: "Samling for varehussjefer", detail: "Inviter til en felles konseptrunde", icon: CalendarDays }] : []),
     ...(admin ? [{ href: "/administrasjon", label: "Ny bruker", detail: "Opprett bruker og tildel tilgang", icon: UserPlus }] : []),
