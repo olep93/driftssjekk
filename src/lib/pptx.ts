@@ -8,8 +8,6 @@ import { reportKindLabel } from "./report-kind";
 type Snapshot = { kind:string;store_name:string;cooperative_name:string;round_title:string|null;visit_date:string;assessor_name:string;summary:string;total:number|null;version_no:number;areas:{key:string;score_quarters:number|null;comment:string;needs_follow_up:boolean;images:{path:string;caption:string}[]}[] };
 const navy="142B43", orange="D66B28", green="236A4F", red="AD4944", muted="68788A", line="DCE4EB";
 const width=13.333;
-export const reportPptxTemplateVersion="area-flow-20261008";
-export function reportPptxPath(versionId:string){return `reports/${versionId}-${reportPptxTemplateVersion}.pptx`;}
 function bandColor(score:number|null){return conceptBand(score)==="below"?red:conceptBand(score)==="above"?green:navy;}
 function clean(value:string){return value.replace(/[\u0000-\u001f]/g," ").trim();}
 function pieces(value:string,max=320){const words=clean(value).split(/\s+/);const result:string[]=[];let current="";for(const word of words){if(current&&`${current} ${word}`.length>max){result.push(current);current=word;}else current=current?`${current} ${word}`:word;}if(current)result.push(current);return result.length?result:["Ingen kommentar."];}

@@ -80,7 +80,7 @@ export async function buildReportPdf(snapshot:Snapshot,supabase:SupabaseClient):
         if(error||!data)throw error||new Error("Bilde mangler");
         const original=Buffer.from(await data.arrayBuffer());
         const metadata=await sharp(original).metadata();
-        const bytes=metadata.format==="png"?original:await sharp(original).rotate().jpeg({quality:88}).toBuffer();
+        const bytes=metadata.format==="png"?original:await sharp(original).rotate().jpeg({quality:80}).toBuffer();
         const embedded=metadata.format==="png"?await pdf.embedPng(bytes):await pdf.embedJpg(bytes);
         const portrait=embedded.height>embedded.width;
         const maxHeight=portrait?330:260;

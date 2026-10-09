@@ -56,8 +56,9 @@ export async function POST(request: Request, { params }: { params: Promise<{ act
     const metadata = await sharp(input, { limitInputPixels: 50_000_000 }).metadata();
     if (!["jpeg", "png", "webp"].includes(metadata.format || "")) return apiError("Ugyldig bildeformat");
     bytes = await sharp(input, { limitInputPixels: 50_000_000 }).rotate()
-      .resize({ width: 2200, height: 2200, fit: "inside", withoutEnlargement: true })
-      .jpeg({ quality: 86 }).toBuffer();
+      // Same size and quality as report photos, to stay within the storage quota.
+      .resize({ width: 1600, height: 1600, fit: "inside", withoutEnlargement: true })
+      .jpeg({ quality: 80 }).toBuffer();
   } catch { return apiError("Kunne ikke behandle bildet"); }
   const path = `${actionId}/${crypto.randomUUID()}.jpg`;
   const { error: uploadError } = await admin.storage.from("action-images").upload(path, bytes, { contentType: "image/jpeg", upsert: false });
