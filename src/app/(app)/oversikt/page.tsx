@@ -19,7 +19,12 @@ export default async function Overview({ searchParams }: { searchParams: Promise
   const cooperativeId = ctx.memberships.some((m) => m.cooperative_id === params.coop) ? params.coop! : focusStore?.cooperative_id || defaultCooperativeId(ctx.memberships)!;
   const operations = isOperations(ctx.memberships, cooperativeId);
   const canMonthly = ctx.memberships.some((m) => m.role === "store_manager" && m.cooperative_id === cooperativeId);
-  const { stores, rounds, reports, versions, areas: assessments, actions } = await loadCore(ctx.supabase, cooperativeId);
+  // The event and cooperative lookups only matter for the summary view, but are cheap enough to start alongside the core data.
+  const [{ stores, rounds, reports, versions, areas: assessments, actions }, { data: upcomingEvents }, { data: cooperatives }] = await Promise.all([
+    loadCore(ctx.supabase, cooperativeId),
+    ctx.supabase.from("events").select("id,title,starts_at,location_store_id").eq("status","planned").order("starts_at",{ascending:true}).limit(3),
+    ctx.supabase.from("cooperatives").select("id,name"),
+  ]);
   const focused = await focusedStoreId(stores, ctx.memberships);
   const selectedStore = operations ? stores.find((store) => store.id === selectedStoreId(params.store, focused, stores)) : undefined;
   if (selectedStore) {
@@ -35,8 +40,6 @@ export default async function Overview({ searchParams }: { searchParams: Promise
       <section className="panel"><div className="panel-header"><h2>Siste rapporter</h2><Link className="panel-link" href={`/rapporter?view=history&store=${selectedStore.id}`}>Se historikk</Link></div>{published.slice(0, 5).map((report) => <Link className="list-card" href={`/rapporter/${report.id}`} key={report.id}><div><h3>{reportKindLabel(report.kind, report.event_id)}</h3><p>{formatDate(versions.find((version) => version.id === report.current_version_id)?.visit_date)}</p></div><Score value={scoreFor(report, versions, assessments)} neutral={report.kind === "self_check"}/></Link>)}{!published.length && <p className="muted">Ingen publiserte rapporter.</p>}</section>
     </>;
   }
-  const { data: upcomingEvents } = await ctx.supabase.from("events").select("id,title,starts_at,location_store_id").eq("status","planned").order("starts_at",{ascending:true}).limit(3);
-  const { data: cooperatives } = await ctx.supabase.from("cooperatives").select("id,name");
   const currentRound = rounds.find((r) => r.id === params.round) || rounds[0];
   const roundReports = reports.filter((r) => r.kind === "inspection" && r.round_id === currentRound?.id && r.current_version_id && !r.withdrawn_at);
   const ranking = roundReports.map((r) => ({ report: r, store: stores.find((s) => s.id === r.store_id), version: versions.find((v) => v.id === r.current_version_id), score: scoreFor(r, versions, assessments) })).sort((a,b) => (b.score || 0) - (a.score || 0));

@@ -28,9 +28,11 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     { href: "/min-konto", label: "Min konto", icon: UserRound },
     ...(admin ? [{ href: "/administrasjon", label: "Administrasjon", icon: Settings }] : []),
   ];
-  const { data: cooperatives } = await supabase.from("cooperatives").select("id,name");
+  const [{ data: cooperatives }, { data: availableStores }] = await Promise.all([
+    supabase.from("cooperatives").select("id,name"),
+    operations ? supabase.from("stores").select("id,cooperative_id,name,active").eq("active",true).order("name") : Promise.resolve({ data: [] }),
+  ]);
   const cooperative = cooperatives?.find((item) => item.id === defaultCooperativeId(memberships));
-  const { data: availableStores } = operations ? await supabase.from("stores").select("id,cooperative_id,name,active").eq("active",true).order("name") : { data: [] };
   const focusStores = operationStores(availableStores || [], memberships);
   const focusId = await focusedStoreId(focusStores, memberships);
   const monthlyStoreId = memberships.find((member) => member.role === "store_manager")?.store_id || undefined;
