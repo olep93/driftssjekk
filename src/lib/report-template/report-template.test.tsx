@@ -33,9 +33,9 @@ describe("overskrift og sammenligning", () => {
     expect(summaryHeadline("self_check", 6.4375, scored)).toBe("Butikk sterkest, uteområde svakest");
   });
   it("viser ikke sammenligning med for få varehus", () => {
-    expect(peerComparison(6.4, [6, 6.2, 5.8, 6.1])).toBeNull();
-    expect(peerComparison(6.4, [6, 6.2, 5.8, 6.1, 6.3])).toBe("above");
-    expect(peerComparison(6.1, [6, 6.2, 5.8, 6.1, 6.3])).toBe("level");
+    expect(peerComparison(6.4, [6, 6.2, 5.8])).toBeNull();
+    expect(peerComparison(6.4, [6, 6.2, 5.8, 6.1])).toBe("above");
+    expect(peerComparison(6.0, [6, 6.2, 5.8, 6.1])).toBe("level");
   });
   it("deler kriteriene i to omtrent like kolonner", () => {
     const [left, right] = balanceColumns(criteriaSections);

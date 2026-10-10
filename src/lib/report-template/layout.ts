@@ -48,8 +48,11 @@ export function summaryHeadline(kind: string, total: number | null, scored: Area
   return notBelow.length ? `Under konsept, men ${strongest.label.toLocaleLowerCase("nb-NO")} holder nivået` : "Under konsept i alle vurderte områder";
 }
 
-/** Below this many stores with a recent concept check, a peer comparison could reveal other stores. */
-export const minimumPeerStores = 5;
+/**
+ * Other stores with a recent concept check needed before the comparison is shown. Four lets a
+ * cooperative of five stores, such as Coop Sørøst, compare; with fewer, "over/under" could reveal a store.
+ */
+export const minimumPeerStores = 4;
 export type PeerComparison = "above" | "level" | "below";
 /** Compares with the cooperative average without exposing the average itself. */
 export function peerComparison(total: number | null, peerTotals: number[]): PeerComparison | null {
