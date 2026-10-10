@@ -124,12 +124,20 @@ function SummaryPage({ data }: { data: ReportDocumentData }) {
         return <View key={area.key} style={{ flexDirection: "row", alignItems: "center", paddingVertical: 8, borderBottomWidth: 0.6, borderBottomColor: tokens.line }}>
           <Text style={{ width: 110, fontWeight: 600, fontSize: 10.5 }}>{area.label}</Text>
           <View style={{ flexGrow: 1, height: 6, borderRadius: 3, backgroundColor: tokens.soft, marginRight: 16 }}>
-            <View style={{ width: `${width}%`, height: 6, borderRadius: 3, backgroundColor: selfCheck ? tokens.accent : bandColor(area.score) }} />
+            <View style={{ width: `${Math.max(width, area.score === null ? 0 : 1.2)}%`, height: 6, borderRadius: 3, backgroundColor: selfCheck ? tokens.accent : bandColor(area.score) }} />
             {!selfCheck && <View style={{ position: "absolute", left: `${(5 / 9) * 100}%`, top: -3, width: 1, height: 12, backgroundColor: tokens.ink, opacity: 0.5 }} />}
           </View>
           <Text style={{ width: 44, textAlign: "right", fontFamily: "Archivo", fontWeight: 800, fontSize: 14, color: selfCheck ? tokens.ink : bandColor(area.score) }}>{formatScore(area.score)}</Text>
         </View>;
       })}
+      {/* Scale under the bars: same left edge and width as the bar track, with the concept grade highlighted. */}
+      <View style={{ height: 22, marginLeft: 110, marginRight: 60, marginTop: 4 }}>
+        {Array.from({ length: 10 }, (_, index) => {
+          const grade = index + 1, concept = grade === 6 && !selfCheck;
+          return <Text key={grade} style={{ position: "absolute", left: `${(index / 9) * 100}%`, width: 20, marginLeft: -10, textAlign: "center", fontSize: concept ? 8.5 : 7.5, fontWeight: concept ? 600 : 400, color: concept ? tokens.ink : tokens.faint }}>{grade}</Text>;
+        })}
+        {!selfCheck && <Text style={{ position: "absolute", left: `${(5 / 9) * 100}%`, top: 11, width: 50, marginLeft: -25, textAlign: "center", fontSize: 6.5, color: tokens.muted }}>konsept</Text>}
+      </View>
     </View>
 
     {(data.strengths.length > 0 || data.improvements.length > 0) && <View style={{ flexDirection: "row", marginTop: 18 }}>

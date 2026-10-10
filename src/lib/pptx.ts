@@ -59,11 +59,17 @@ export async function buildReportPptx(snapshot: ReportSnapshot, supabase: Supaba
   const date = formatDate(snapshot.visit_date);
   const slides: PptxGenJS.Slide[] = [];
 
+  // Only filled rectangles: zero-height lines and rounded shapes render as broken boxes in some
+  // viewers, such as the Quick Look preview on iPhone and Mac.
+  // Transparency is avoided too: those viewers draw semi-transparent shapes as images, sometimes on other slides.
+  function block(s: PptxGenJS.Slide, x: number, y: number, w: number, h: number, color: string) {
+    s.addShape(pptx.ShapeType.rect, { x, y, w, h, fill: { color }, line: { type: "none" } });
+  }
   function base(label: string) {
     const s = pptx.addSlide(); slides.push(s); s.background = { color: c.white };
     s.addText("DRIFTSSJEKK", { x: X, y: 0.3, w: 4, h: 0.22, fontFace: font, fontSize: 9, bold: true, color: c.ink, charSpacing: 2, margin: 0 });
     s.addText(label.toUpperCase(), { x: W - X - 6, y: 0.3, w: 6, h: 0.22, fontFace: font, fontSize: 8.5, color: c.faint, charSpacing: 1, align: "right", margin: 0 });
-    s.addShape(pptx.ShapeType.line, { x: X, y: H - 0.48, w: CW, h: 0, line: { color: c.line, width: 0.75 } });
+    block(s, X, H - 0.48, CW, 0.012, c.line);
     s.addText(`${snapshot.store_name} · ${date}`, { x: X, y: H - 0.4, w: 8, h: 0.2, fontFace: font, fontSize: 8, color: c.faint, margin: 0 });
     return s;
   }
@@ -74,7 +80,7 @@ export async function buildReportPptx(snapshot: ReportSnapshot, supabase: Supaba
     s.addText(text, { x, y, w, h: 0.62, fontFace: font, fontSize: size, bold: true, color: c.ink, margin: 0, fit: "shrink", valign: "top" });
   }
   function pill(s: PptxGenJS.Slide, text: string, x: number, y: number, colors: string[], w = 2.4) {
-    s.addText(text, { x, y, w, h: 0.32, fontFace: font, fontSize: 11, bold: true, color: colors[0], fill: { color: colors[1] }, shape: pptx.ShapeType.roundRect, rectRadius: 0.16, align: "center", margin: 0 });
+    s.addText(text, { x, y, w, h: 0.32, fontFace: font, fontSize: 11, bold: true, color: colors[0], fill: { color: colors[1] }, align: "center", margin: 0 });
   }
   function photo(s: PptxGenJS.Slide, image: ReportPhoto | null, cell: Box, number: number, caption: string) {
     s.addShape(pptx.ShapeType.rect, { x: cell.x, y: cell.y, w: cell.w, h: cell.h, fill: { color: c.soft }, line: { color: c.soft, width: 0 } });
@@ -114,25 +120,33 @@ export async function buildReportPptx(snapshot: ReportSnapshot, supabase: Supaba
   reportAreas.forEach((area, index) => {
     const y = 1.85 + index * 0.68, colors = selfCheck ? [c.accent, c.soft] : band(area.score);
     summary.addText(area.label, { x: rowsX, y, w: 2.1, h: 0.4, fontFace: font, fontSize: 15, bold: true, color: c.ink, margin: 0, valign: "middle" });
-    summary.addShape(pptx.ShapeType.roundRect, { x: barX, y: y + 0.14, w: barW, h: 0.13, rectRadius: 0.06, fill: { color: c.soft }, line: { color: c.soft, width: 0 } });
-    if (area.score !== null) summary.addShape(pptx.ShapeType.roundRect, { x: barX, y: y + 0.14, w: Math.max(0.13, barW * (area.score - 1) / 9), h: 0.13, rectRadius: 0.06, fill: { color: colors[0] }, line: { color: colors[0], width: 0 } });
-    if (!selfCheck) summary.addShape(pptx.ShapeType.line, { x: barX + barW * 5 / 9, y: y + 0.04, w: 0, h: 0.33, line: { color: c.ink, width: 0.75, transparency: 50 } });
+    block(summary, barX, y + 0.14, barW, 0.13, c.soft);
+    // A score of 1 still shows a short stub, so the bar never looks missing.
+    if (area.score !== null) block(summary, barX, y + 0.14, Math.max(0.1, barW * (area.score - 1) / 9), 0.13, colors[0]);
+    if (!selfCheck) block(summary, barX + barW * 5 / 9 - 0.008, y + 0.04, 0.016, 0.33, "8F9AA8");
     summary.addText(formatScore(area.score), { x: rowsX + rowsW - 1.0, y, w: 1.0, h: 0.4, fontFace: font, fontSize: 19, bold: true, color: selfCheck ? c.ink : colors[0], align: "right", margin: 0, valign: "middle" });
-    summary.addShape(pptx.ShapeType.line, { x: rowsX, y: y + 0.55, w: rowsW, h: 0, line: { color: c.line, width: 0.75 } });
+    block(summary, rowsX, y + 0.55, rowsW, 0.01, c.line);
   });
+  // Scale under the bars, with the concept grade highlighted.
+  const scaleY = 1.85 + reportAreas.length * 0.68 - 0.05;
+  for (let grade = 1; grade <= 10; grade++) {
+    const concept = grade === 6 && !selfCheck;
+    summary.addText(String(grade), { x: barX + barW * (grade - 1) / 9 - 0.2, y: scaleY, w: 0.4, h: 0.24, fontFace: font, fontSize: concept ? 11 : 9.5, bold: concept, color: concept ? c.ink : c.faint, align: "center", margin: 0 });
+  }
+  if (!selfCheck) summary.addText("konsept", { x: barX + barW * 5 / 9 - 0.5, y: scaleY + 0.22, w: 1.0, h: 0.2, fontFace: font, fontSize: 8.5, color: c.muted, align: "center", margin: 0 });
   const boxes = [{ label: "Styrker", items: context?.strengths || [], color: c.good }, { label: "Forbedringer", items: context?.improvements || [], color: c.bad }].filter((box) => box.items.length);
   boxes.forEach((box, index) => {
-    const w = (CW - 0.3) / 2, x = X + index * (w + 0.3), y = 4.85;
-    summary.addShape(pptx.ShapeType.roundRect, { x, y, w, h: 1.85, rectRadius: 0.08, fill: { color: c.soft }, line: { color: c.soft, width: 0 } });
+    const w = (CW - 0.3) / 2, x = X + index * (w + 0.3), y = 5.05;
+    block(summary, x, y, w, 1.7, c.soft);
     summary.addText(box.label.toUpperCase(), { x: x + 0.25, y: y + 0.2, w: w - 0.5, h: 0.24, fontFace: font, fontSize: 10, bold: true, color: box.color, charSpacing: 1.2, margin: 0 });
-    summary.addText(box.items.map((item) => ({ text: item, options: { bullet: { indent: 14 }, breakLine: true } })), { x: x + 0.25, y: y + 0.52, w: w - 0.5, h: 1.2, fontFace: font, fontSize: 14, color: c.ink, margin: 0, valign: "top", fit: "shrink", paraSpaceAfter: 4 });
+    summary.addText(box.items.map((item) => ({ text: item, options: { bullet: { indent: 14 }, breakLine: true } })), { x: x + 0.25, y: y + 0.5, w: w - 0.5, h: 1.08, fontFace: font, fontSize: 14, color: c.ink, margin: 0, valign: "top", fit: "shrink", paraSpaceAfter: 4 });
   });
   if (snapshot.summary) summary.addNotes(clean(snapshot.summary));
   // A short summary fits under the areas when there are no highlight boxes; otherwise it gets its own slide.
   const inlineSummary = !boxes.length && clean(snapshot.summary).length > 0 && clean(snapshot.summary).length <= 320;
   if (inlineSummary) {
-    eyebrow(summary, "Oppsummering", 4.85);
-    summary.addText(clean(snapshot.summary), { x: X, y: 5.2, w: CW, h: 1.4, fontFace: font, fontSize: 16, color: c.ink, margin: 0, valign: "top", fit: "shrink" });
+    eyebrow(summary, "Oppsummering", 5.1);
+    summary.addText(clean(snapshot.summary), { x: X, y: 5.42, w: CW, h: 1.25, fontFace: font, fontSize: 16, color: c.ink, margin: 0, valign: "top", fit: "shrink" });
   }
 
   // 3. Summary text, split if long
@@ -178,15 +192,15 @@ export async function buildReportPptx(snapshot: ReportSnapshot, supabase: Supaba
     eyebrow(s, "Utvikling", 0.8);
     title(s, "Konseptsjekker i varehuset", 1.1);
     const chart = { x: X, y: 2.1, w: CW, h: 3.9 }, slot = chart.w / history.length;
-    s.addShape(pptx.ShapeType.line, { x: chart.x, y: chart.y + chart.h, w: chart.w, h: 0, line: { color: c.line, width: 1 } });
-    s.addShape(pptx.ShapeType.line, { x: chart.x, y: chart.y + chart.h * 0.4, w: chart.w, h: 0, line: { color: c.ink, width: 0.75, dashType: "dash", transparency: 50 } });
+    block(s, chart.x, chart.y + chart.h, chart.w, 0.014, c.line);
+    block(s, chart.x, chart.y + chart.h * 0.4, chart.w, 0.014, "8F9AA8");
     history.forEach((point, index) => {
       const h = chart.h * point.total / 10, x = chart.x + index * slot + slot * 0.2, w = slot * 0.6, current = index === history.length - 1;
       s.addShape(pptx.ShapeType.rect, { x, y: chart.y + chart.h - h, w, h, fill: { color: current ? c.accent : "C9D3DD" }, line: { color: current ? c.accent : "C9D3DD", width: 0 } });
       s.addText(formatScore(point.total), { x, y: chart.y + chart.h - h - 0.34, w, h: 0.28, fontFace: font, fontSize: 12, bold: current, color: current ? c.ink : c.muted, align: "center", margin: 0 });
       s.addText(formatDate(point.date), { x, y: chart.y + chart.h + 0.08, w, h: 0.26, fontFace: font, fontSize: 10, color: c.muted, align: "center", margin: 0 });
     });
-    s.addText("Stiplet linje viser konsept (karakter 6). Søylene starter på 0.", { x: X, y: chart.y + chart.h + 0.45, w: CW, h: 0.24, fontFace: font, fontSize: 10, color: c.muted, margin: 0 });
+    s.addText("Den tynne linjen viser konsept (karakter 6). Søylene starter på 0.", { x: X, y: chart.y + chart.h + 0.45, w: CW, h: 0.24, fontFace: font, fontSize: 10, color: c.muted, margin: 0 });
   }
 
   // 6. Criteria, two balanced columns per slide
