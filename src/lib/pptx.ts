@@ -1,113 +1,215 @@
 import PptxGenJS from "pptxgenjs";
-import sharp from "sharp";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { areas, formatDate, formatScore } from "./scoring";
 import { conceptBand, conceptLabel, criteriaSections } from "./criteria";
 import { reportKindLabel } from "./report-kind";
+import { balanceColumns, fitPhoto, summaryHeadline } from "./report-template/layout";
+import { loadContext, loadPhoto, type ReportSnapshot } from "./report-template/build";
+import type { ReportPhoto } from "./report-template/report-document";
 
-type Snapshot = { kind:string;store_name:string;cooperative_name:string;round_title:string|null;visit_date:string;assessor_name:string;summary:string;total:number|null;version_no:number;areas:{key:string;score_quarters:number|null;comment:string;needs_follow_up:boolean;images:{path:string;caption:string}[]}[] };
-const navy="142B43", orange="D66B28", green="236A4F", red="AD4944", muted="68788A", line="DCE4EB";
-const width=13.333;
-function bandColor(score:number|null){return conceptBand(score)==="below"?red:conceptBand(score)==="above"?green:navy;}
-function clean(value:string){return value.replace(/[\u0000-\u001f]/g," ").trim();}
-function pieces(value:string,max=320){const words=clean(value).split(/\s+/);const result:string[]=[];let current="";for(const word of words){if(current&&`${current} ${word}`.length>max){result.push(current);current=word;}else current=current?`${current} ${word}`:word;}if(current)result.push(current);return result.length?result:["Ingen kommentar."];}
-export async function buildReportPptx(snapshot:Snapshot,supabase:SupabaseClient):Promise<Uint8Array>{
-  const pptx=new PptxGenJS();pptx.layout="LAYOUT_WIDE";pptx.author="Driftssjekk";pptx.subject="Rapport fra varehus";pptx.title=`${snapshot.store_name} – ${snapshot.kind==="self_check"?"driftsgjennomgang":"konseptrunde"}`;
-  pptx.theme={headFontFace:"Arial",bodyFontFace:"Arial"};
-  const kind=reportKindLabel(snapshot.kind);
-  const reportAreas=snapshot.kind==="event_check"?areas.filter((area)=>snapshot.areas.some((item)=>item.key===area.key)):areas;
-  const partialEvent=snapshot.kind==="event_check"&&reportAreas.length<4;
-  const slides:PptxGenJS.Slide[]=[];
-  function slide(title:string,subtitle?:string){const s=pptx.addSlide();slides.push(s);s.background={color:"FFFFFF"};s.addShape(pptx.ShapeType.rect,{x:0,y:0,w:width,h:.11,line:{color:navy},fill:{color:navy}});s.addText(title,{x:.72,y:.42,w:11.9,h:.54,fontFace:"Arial",fontSize:27,bold:true,color:navy,margin:0,breakLine:false});if(subtitle)s.addText(subtitle,{x:.73,y:1.04,w:11.8,h:.38,fontFace:"Arial",fontSize:11,color:muted,margin:0});return s;}
-  function footer(s:PptxGenJS.Slide){s.addShape(pptx.ShapeType.line,{x:.72,y:7.17,w:11.9,h:0,line:{color:line,width:1}});s.addText(`${kind} · ${snapshot.store_name}`,{x:.73,y:7.22,w:10.7,h:.18,fontFace:"Arial",fontSize:8,color:muted,margin:0});}
-  function paragraphSlides(title:string,items:string[],subtitle?:string){const content=items.flatMap((item)=>pieces(item)),created:PptxGenJS.Slide[]=[];let index=0;while(index<content.length){const s=slide(index===0?title:`${title} (forts.)`,subtitle);created.push(s);let y=1.63;while(index<content.length){const item=content[index],lines=Math.max(1,Math.ceil(item.length/88)),boxHeight=.4+Math.max(0,lines-1)*.32,rowHeight=Math.max(.76,boxHeight+.3);if(y+rowHeight>6.85&&y>1.63)break;s.addShape(pptx.ShapeType.ellipse,{x:.78,y:y+.12,w:.08,h:.08,line:{color:orange},fill:{color:orange}});s.addText(item,{x:1.04,y,w:11.3,h:boxHeight,fontFace:"Arial",fontSize:16,color:navy,margin:0,breakLine:false,valign:"middle"});y+=rowHeight;index++;}footer(s);}return created;}
+/**
+ * The deck follows the PDF template: same neutral colours, the same headline rules and the same
+ * photo rules (never cropped, a fixed grid that grows into extra slides instead of shrinking).
+ * PowerPoint cannot reliably embed fonts, so Arial stands in for the PDF's typefaces.
+ */
+const c = { ink: "1D2836", muted: "647184", faint: "8B96A5", line: "E1E6EB", soft: "F3F5F7", accent: "2F6B86", good: "256D52", goodSoft: "E2F0E9", bad: "AC453D", badSoft: "F7E4E2", mid: "33475C", midSoft: "E7ECF1", flag: "9A5A12", flagSoft: "FBEFDF", white: "FFFFFF" };
+const W = 13.333, H = 7.5, X = 0.7, CW = W - 2 * X, font = "Arial";
+const band = (score: number | null) => { const value = conceptBand(score); return value === "above" ? [c.good, c.goodSoft] : value === "below" ? [c.bad, c.badSoft] : [c.mid, c.midSoft]; };
+const clean = (value: string) => value.replace(/[\u0000-\u0008\u000b-\u001f]/g, " ").trim();
+const clip = (text: string, max: number) => text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text;
+/** Splits long text at word boundaries so each slide keeps a readable amount. */
+function chunks(value: string, max: number) {
+  const words = clean(value).split(/\s+/).filter(Boolean), result: string[] = [];
+  let current = "";
+  for (const word of words) { if (current && `${current} ${word}`.length > max) { result.push(current); current = word; } else current = current ? `${current} ${word}` : word; }
+  if (current) result.push(current);
+  return result.length ? result : [""];
+}
 
-  const cover=pptx.addSlide();slides.push(cover);cover.background={color:navy};
-  cover.addShape(pptx.ShapeType.rect,{x:0,y:0,w:.16,h:7.5,line:{color:orange},fill:{color:orange}});
-  cover.addText("DRIFTSSJEKK",{x:.78,y:.56,w:6,h:.3,fontFace:"Arial",fontSize:13,bold:true,color:"AAC0D0",charSpacing:2,margin:0});
-  cover.addText(kind.toUpperCase(),{x:.78,y:1.38,w:11.6,h:.4,fontFace:"Arial",fontSize:17,bold:true,color:"F6A66F",margin:0});
-  cover.addText(snapshot.store_name,{x:.75,y:1.94,w:11.55,h:.88,fontFace:"Arial",fontSize:35,bold:true,color:"FFFFFF",margin:0,fit:"shrink"});
-  cover.addText(`${snapshot.cooperative_name}  ·  ${formatDate(snapshot.visit_date)}`,{x:.78,y:2.94,w:10.8,h:.33,fontFace:"Arial",fontSize:14,color:"BCD0DF",margin:0});
-  cover.addShape(pptx.ShapeType.rect,{x:.78,y:3.75,w:5.15,h:2.14,line:{color:"35516C",width:1},fill:{color:"1D3A55"}});
-  cover.addText(snapshot.kind==="self_check"?"DRIFTSKARAKTER":partialEvent?"DELVURDERING":"TOTALKARAKTER",{x:1.08,y:4.04,w:4.5,h:.28,fontFace:"Arial",fontSize:11,bold:true,color:"AFC3D3",charSpacing:1,margin:0});
-  cover.addText(formatScore(snapshot.total),{x:1.05,y:4.48,w:4.6,h:.95,fontFace:"Arial",fontSize:snapshot.total==null?27:58,bold:true,color:"FFFFFF",margin:0});
-  cover.addText(snapshot.kind!=="self_check"?(partialEvent?"Tildelte områder":conceptLabel(snapshot.total)):"Intern progresjon",{x:6.35,y:4.18,w:5.7,h:.57,fontFace:"Arial",fontSize:23,bold:true,color:snapshot.kind!=="self_check"?"FFFFFF":"BCD0DF",margin:0});
-  cover.addText(`Vurderer: ${snapshot.assessor_name||"Ukjent"}\nVersjon ${snapshot.version_no}`,{x:6.37,y:5.03,w:5.7,h:.75,fontFace:"Arial",fontSize:13,color:"BCD0DF",margin:0,breakLine:false});
-  cover.addShape(pptx.ShapeType.line,{x:.78,y:6.98,w:11.77,h:0,line:{color:"446178",width:1}});
-  cover.addText("OBS BYGG  /  VAREHUSSTANDARD",{x:.78,y:7.09,w:8.8,h:.2,fontFace:"Arial",fontSize:9,bold:true,color:"AAC0D0",margin:0});
-
-  const summarySlides=paragraphSlides("Oppsummering",[snapshot.summary||"Ingen samlet kommentar."],snapshot.round_title||undefined);
-  if(summarySlides.length===1&&clean(snapshot.summary).length<=280){const s=summarySlides[0];s.addText("RESULTAT PER OMRÅDE",{x:.75,y:4.57,w:11,h:.25,fontFace:"Arial",fontSize:11,bold:true,color:muted,margin:0});
-    reportAreas.forEach((area,index)=>{const assessment=snapshot.areas.find((item)=>item.key===area.key),score=assessment?.score_quarters==null?null:assessment.score_quarters/4,x=.75+index*3.12;s.addShape(pptx.ShapeType.rect,{x,y:4.95,w:2.94,h:1.05,line:{color:line,width:1},fill:{color:"F7F9FB"}});s.addText(area.label,{x:x+.17,y:5.12,w:2.6,h:.24,fontFace:"Arial",fontSize:11,bold:true,color:muted,margin:0});s.addText(formatScore(score),{x:x+.17,y:5.43,w:2.6,h:.37,fontFace:"Arial",fontSize:score==null?13:22,bold:true,color:snapshot.kind!=="self_check"?bandColor(score):navy,margin:0});});
+type Box = { x: number; y: number; w: number; h: number };
+/** Photo cells for one slide: 1 large, 2 side by side, 3 as one large and two small, 4 as 2×2, 5–6 as 3×2. */
+export function photoCells(count: number, area: Box): Box[] {
+  const gap = 0.16, captionSpace = 0.34;
+  const grid = (columns: number, rows: number) => Array.from({ length: count }, (_, index) => {
+    const w = (area.w - gap * (columns - 1)) / columns, h = (area.h - gap * (rows - 1)) / rows;
+    return { x: area.x + (index % columns) * (w + gap), y: area.y + Math.floor(index / columns) * (h + gap), w, h: h - captionSpace };
+  });
+  if (count <= 1) return [{ ...area, h: area.h - captionSpace }];
+  if (count === 2) return grid(2, 1);
+  if (count === 3) {
+    const big = (area.w - gap) * 0.6, small = area.w - gap - big, half = (area.h - gap) / 2;
+    return [{ x: area.x, y: area.y, w: big, h: area.h - captionSpace }, { x: area.x + big + gap, y: area.y, w: small, h: half - captionSpace }, { x: area.x + big + gap, y: area.y + half + gap, w: small, h: half - captionSpace }];
   }
-  for(const [areaIndex,area] of reportAreas.entries()){
-    const assessment=snapshot.areas.find((item)=>item.key===area.key);
-    if(!assessment)continue;
-    const score=assessment.score_quarters==null?null:assessment.score_quarters/4;
-    const areaSlide=slide(area.label,`OMRÅDE ${String(areaIndex+1).padStart(2,"0")} / ${reportAreas.length}   ·   ${kind}`);
-    areaSlide.addShape(pptx.ShapeType.rect,{x:.75,y:1.57,w:3.28,h:4.98,line:{color:line,width:1},fill:{color:"F4F7FA"}});
-    areaSlide.addShape(pptx.ShapeType.rect,{x:.75,y:1.57,w:.075,h:4.98,line:{color:snapshot.kind!=="self_check"?bandColor(score):navy},fill:{color:snapshot.kind!=="self_check"?bandColor(score):navy}});
-    areaSlide.addText("KARAKTER",{x:1.08,y:1.94,w:2.55,h:.29,fontFace:"Arial",fontSize:11,bold:true,charSpacing:1.5,color:muted,margin:0});
-    areaSlide.addText(formatScore(score),{x:1.04,y:2.43,w:2.7,h:1.22,fontFace:"Arial",fontSize:score==null?26:65,bold:true,color:snapshot.kind!=="self_check"?bandColor(score):navy,margin:0,fit:"shrink"});
-    if(snapshot.kind!=="self_check")areaSlide.addText(conceptLabel(score),{x:1.09,y:3.86,w:2.58,h:.55,fontFace:"Arial",fontSize:16,bold:true,color:bandColor(score),margin:0,fit:"shrink"});
-    if(assessment.needs_follow_up)areaSlide.addText("KREVER OPPFØLGING",{x:1.09,y:5.72,w:2.6,h:.34,fontFace:"Arial",fontSize:10,bold:true,color:orange,margin:0});
-    areaSlide.addText("VURDERING",{x:4.48,y:1.78,w:7.82,h:.31,fontFace:"Arial",fontSize:11,bold:true,charSpacing:1.3,color:muted,margin:0});
-    const commentChunks=pieces(assessment.comment||"Ingen kommentar.",510);
-    areaSlide.addText(commentChunks[0],{x:4.47,y:2.25,w:7.58,h:3.93,fontFace:"Arial",fontSize:20,color:navy,margin:0,breakLine:false,fit:"shrink",valign:"top"});
-    areaSlide.addShape(pptx.ShapeType.line,{x:4.47,y:6.31,w:7.84,h:0,line:{color:line,width:1}});
-    areaSlide.addText(`${assessment.images.length} ${assessment.images.length===1?"bilde":"bilder"} fra området`,{x:4.47,y:6.45,w:7.8,h:.25,fontFace:"Arial",fontSize:11,color:muted,margin:0});
-    footer(areaSlide);
-    if(commentChunks.length>1)paragraphSlides(`${area.label} · vurdering`,commentChunks.slice(1),`OMRÅDE ${String(areaIndex+1).padStart(2,"0")} / ${reportAreas.length}`);
-    for(const [index,image] of assessment.images.entries()){
-      const photoSlide=slide(area.label,`Dokumentasjon · bilde ${index+1} av ${assessment.images.length}`);
-      try{
-        const {data,error}=await supabase.storage.from("report-images").download(image.path);
-        if(error||!data)throw error||new Error("Bilde mangler");
-        const converted=await sharp(Buffer.from(await data.arrayBuffer())).rotate().jpeg({quality:88}).toBuffer();
-        const metadata=await sharp(converted).metadata();
-        if(!metadata.width||!metadata.height)throw new Error("Ugyldige bildemål");
-        const portrait=metadata.height>metadata.width;
-        const box=portrait?{x:.78,y:1.55,w:7.0,h:5.15}:{x:.78,y:1.53,w:11.75,h:4.83};
-        photoSlide.addShape(pptx.ShapeType.rect,{x:box.x,y:box.y,w:box.w,h:box.h,line:{color:line,width:1},fill:{color:"F4F7F9"}});
-        const scale=Math.min(box.w/metadata.width,box.h/metadata.height);
-        const imageWidth=metadata.width*scale,imageHeight=metadata.height*scale;
-        photoSlide.addImage({data:`data:image/jpeg;base64,${converted.toString("base64")}`,x:box.x+(box.w-imageWidth)/2,y:box.y+(box.h-imageHeight)/2,w:imageWidth,h:imageHeight,altText:image.caption||`Bilde fra ${area.label}`});
-        if(portrait){
-          photoSlide.addShape(pptx.ShapeType.rect,{x:8.12,y:1.55,w:4.38,h:5.15,line:{color:line,width:1},fill:{color:"F9FBFC"}});
-          photoSlide.addText("BILDETEKST",{x:8.45,y:1.92,w:3.68,h:.28,fontFace:"Arial",fontSize:11,bold:true,color:muted,margin:0});
-          photoSlide.addText(clean(image.caption)||"Dokumentasjon fra området",{x:8.45,y:2.36,w:3.68,h:2.8,fontFace:"Arial",fontSize:20,bold:true,color:navy,margin:0,fit:"shrink",valign:"top"});
-        }else{
-          photoSlide.addText(clean(image.caption)||"Dokumentasjon fra området",{x:.8,y:6.48,w:11.7,h:.38,fontFace:"Arial",fontSize:13,bold:true,color:navy,margin:0,fit:"shrink"});
-        }
-      }catch{photoSlide.addText("Bilde kunne ikke hentes",{x:.8,y:3,w:11.5,h:.4,fontFace:"Arial",fontSize:16,color:muted,margin:0});}
-      footer(photoSlide);
+  if (count === 4) return grid(2, 2);
+  return grid(3, 2);
+}
+
+export async function buildReportPptx(snapshot: ReportSnapshot, supabase: SupabaseClient, versionId?: string): Promise<Uint8Array> {
+  const pptx = new PptxGenJS();
+  pptx.layout = "LAYOUT_WIDE"; pptx.author = "Driftssjekk"; pptx.subject = "Rapport fra varehus";
+  pptx.title = `${snapshot.store_name} – ${reportKindLabel(snapshot.kind)}`;
+  pptx.theme = { headFontFace: font, bodyFontFace: font };
+  const kind = reportKindLabel(snapshot.kind), selfCheck = snapshot.kind === "self_check";
+  const context = versionId ? await loadContext(supabase, versionId, snapshot).catch(() => null) : null;
+  const reportAreas = areas.filter((area) => snapshot.areas.some((item) => item.key === area.key)).map((area) => {
+    const item = snapshot.areas.find((entry) => entry.key === area.key)!;
+    return { ...area, item, score: item.score_quarters === null ? null : item.score_quarters / 4 };
+  });
+  const partial = snapshot.kind === "event_check" && reportAreas.length < 4;
+  const date = formatDate(snapshot.visit_date);
+  const slides: PptxGenJS.Slide[] = [];
+
+  function base(label: string) {
+    const s = pptx.addSlide(); slides.push(s); s.background = { color: c.white };
+    s.addText("DRIFTSSJEKK", { x: X, y: 0.3, w: 4, h: 0.22, fontFace: font, fontSize: 9, bold: true, color: c.ink, charSpacing: 2, margin: 0 });
+    s.addText(label.toUpperCase(), { x: W - X - 6, y: 0.3, w: 6, h: 0.22, fontFace: font, fontSize: 8.5, color: c.faint, charSpacing: 1, align: "right", margin: 0 });
+    s.addShape(pptx.ShapeType.line, { x: X, y: H - 0.48, w: CW, h: 0, line: { color: c.line, width: 0.75 } });
+    s.addText(`${snapshot.store_name} · ${date}`, { x: X, y: H - 0.4, w: 8, h: 0.2, fontFace: font, fontSize: 8, color: c.faint, margin: 0 });
+    return s;
+  }
+  function eyebrow(s: PptxGenJS.Slide, text: string, y: number, x = X, w = CW) {
+    s.addText(text.toUpperCase(), { x, y, w, h: 0.24, fontFace: font, fontSize: 10, bold: true, color: c.accent, charSpacing: 1.5, margin: 0 });
+  }
+  function title(s: PptxGenJS.Slide, text: string, y: number, x = X, w = CW, size = 30) {
+    s.addText(text, { x, y, w, h: 0.62, fontFace: font, fontSize: size, bold: true, color: c.ink, margin: 0, fit: "shrink", valign: "top" });
+  }
+  function pill(s: PptxGenJS.Slide, text: string, x: number, y: number, colors: string[], w = 2.4) {
+    s.addText(text, { x, y, w, h: 0.32, fontFace: font, fontSize: 11, bold: true, color: colors[0], fill: { color: colors[1] }, shape: pptx.ShapeType.roundRect, rectRadius: 0.16, align: "center", margin: 0 });
+  }
+  function photo(s: PptxGenJS.Slide, image: ReportPhoto | null, cell: Box, number: number, caption: string) {
+    s.addShape(pptx.ShapeType.rect, { x: cell.x, y: cell.y, w: cell.w, h: cell.h, fill: { color: c.soft }, line: { color: c.soft, width: 0 } });
+    if (image) {
+      const fitted = fitPhoto(image.width, image.height, cell.w, cell.h);
+      s.addImage({ data: `data:image/jpeg;base64,${image.data.toString("base64")}`, x: cell.x + (cell.w - fitted.width) / 2, y: cell.y + (cell.h - fitted.height) / 2, w: fitted.width, h: fitted.height, altText: caption || `Bilde ${number}` });
+    } else s.addText("Bildet er tilgjengelig i appen", { x: cell.x, y: cell.y, w: cell.w, h: cell.h, fontFace: font, fontSize: 11, color: c.muted, align: "center", margin: 0 });
+    s.addText(String(number), { x: cell.x + 0.1, y: cell.y + 0.1, w: 0.3, h: 0.24, fontFace: font, fontSize: 9, bold: true, color: c.ink, fill: { color: c.white }, align: "center", margin: 0 });
+    if (caption) s.addText(clip(clean(caption), cell.w > 3 ? 140 : 80), { x: cell.x, y: cell.y + cell.h + 0.05, w: cell.w, h: 0.26, fontFace: font, fontSize: 9.5, color: c.muted, margin: 0, fit: "shrink", valign: "top" });
+  }
+
+  // 1. Title
+  const cover = pptx.addSlide(); slides.push(cover); cover.background = { color: c.ink };
+  cover.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: 0.18, h: H, fill: { color: c.accent }, line: { color: c.accent, width: 0 } });
+  cover.addText("DRIFTSSJEKK", { x: X + 0.1, y: 0.55, w: 5, h: 0.26, fontFace: font, fontSize: 11, bold: true, color: "A9B6C6", charSpacing: 2, margin: 0 });
+  cover.addText(kind.toUpperCase(), { x: X + 0.1, y: 2.0, w: 11, h: 0.3, fontFace: font, fontSize: 13, bold: true, color: "8FB8CC", charSpacing: 1.5, margin: 0 });
+  cover.addText(snapshot.store_name, { x: X + 0.1, y: 2.4, w: 11.6, h: 0.95, fontFace: font, fontSize: 44, bold: true, color: c.white, margin: 0, fit: "shrink" });
+  cover.addText([snapshot.cooperative_name, snapshot.round_title, date].filter(Boolean).join("  ·  "), { x: X + 0.1, y: 3.4, w: 11.6, h: 0.32, fontFace: font, fontSize: 15, color: "C3CEDA", margin: 0 });
+  const coverScoreColor = selfCheck ? c.white : conceptBand(snapshot.total) === "above" ? "7FD1AB" : conceptBand(snapshot.total) === "below" ? "F0A39B" : c.white;
+  cover.addText(formatScore(snapshot.total), { x: X + 0.1, y: 4.35, w: 3.6, h: 1.25, fontFace: font, fontSize: snapshot.total === null ? 28 : 72, bold: true, color: coverScoreColor, margin: 0 });
+  const coverLines = [selfCheck ? "Driftskarakter · intern progresjon" : partial ? "Delvurdering av tildelte områder" : conceptLabel(snapshot.total)];
+  if (!selfCheck && context?.previousTotal != null && snapshot.total !== null) {
+    const delta = snapshot.total - context.previousTotal;
+    coverLines.push(Math.abs(delta) < 0.005 ? "Samme som forrige konseptsjekk" : `${delta > 0 ? "+" : "−"}${formatScore(Math.abs(delta))} siden forrige konseptsjekk`);
+  }
+  if (!selfCheck && context?.peer) coverLines.push(context.peer === "above" ? "Over snittet i samvirkelaget" : context.peer === "below" ? "Under snittet i samvirkelaget" : "På snittet i samvirkelaget");
+  cover.addText(coverLines.join("\n"), { x: X + 3.9, y: 4.55, w: 7.5, h: 1.0, fontFace: font, fontSize: 15, color: "C3CEDA", margin: 0, valign: "top", breakLine: false });
+  cover.addText(`Vurdert av ${snapshot.assessor_name || "ukjent"}${snapshot.version_no > 1 ? ` · versjon ${snapshot.version_no}` : ""}`, { x: X + 0.1, y: H - 0.62, w: 10, h: 0.24, fontFace: font, fontSize: 10, color: "8E9BAC", margin: 0 });
+
+  // 2. Summary: headline, total and the area bars
+  const summary = base(kind);
+  title(summary, summaryHeadline(snapshot.kind, snapshot.total, reportAreas.map((area) => ({ label: area.label, score: area.score }))), 0.75);
+  summary.addText(selfCheck ? "DRIFTSKARAKTER" : partial ? "DELVURDERING" : "TOTALKARAKTER", { x: X, y: 1.75, w: 3.4, h: 0.24, fontFace: font, fontSize: 9.5, bold: true, color: c.muted, charSpacing: 1.2, margin: 0 });
+  summary.addText(formatScore(snapshot.total), { x: X, y: 2.05, w: 3.4, h: 1.15, fontFace: font, fontSize: snapshot.total === null ? 24 : 66, bold: true, color: selfCheck ? c.ink : band(snapshot.total)[0], margin: 0 });
+  if (!selfCheck) pill(summary, partial ? "Tildelte områder" : conceptLabel(snapshot.total), X, 3.3, band(snapshot.total));
+  const rowsX = X + 4.1, rowsW = CW - 4.1, barX = rowsX + 2.2, barW = rowsW - 3.3;
+  reportAreas.forEach((area, index) => {
+    const y = 1.85 + index * 0.68, colors = selfCheck ? [c.accent, c.soft] : band(area.score);
+    summary.addText(area.label, { x: rowsX, y, w: 2.1, h: 0.4, fontFace: font, fontSize: 15, bold: true, color: c.ink, margin: 0, valign: "middle" });
+    summary.addShape(pptx.ShapeType.roundRect, { x: barX, y: y + 0.14, w: barW, h: 0.13, rectRadius: 0.06, fill: { color: c.soft }, line: { color: c.soft, width: 0 } });
+    if (area.score !== null) summary.addShape(pptx.ShapeType.roundRect, { x: barX, y: y + 0.14, w: Math.max(0.13, barW * (area.score - 1) / 9), h: 0.13, rectRadius: 0.06, fill: { color: colors[0] }, line: { color: colors[0], width: 0 } });
+    if (!selfCheck) summary.addShape(pptx.ShapeType.line, { x: barX + barW * 5 / 9, y: y + 0.04, w: 0, h: 0.33, line: { color: c.ink, width: 0.75, transparency: 50 } });
+    summary.addText(formatScore(area.score), { x: rowsX + rowsW - 1.0, y, w: 1.0, h: 0.4, fontFace: font, fontSize: 19, bold: true, color: selfCheck ? c.ink : colors[0], align: "right", margin: 0, valign: "middle" });
+    summary.addShape(pptx.ShapeType.line, { x: rowsX, y: y + 0.55, w: rowsW, h: 0, line: { color: c.line, width: 0.75 } });
+  });
+  const boxes = [{ label: "Styrker", items: context?.strengths || [], color: c.good }, { label: "Forbedringer", items: context?.improvements || [], color: c.bad }].filter((box) => box.items.length);
+  boxes.forEach((box, index) => {
+    const w = (CW - 0.3) / 2, x = X + index * (w + 0.3), y = 4.85;
+    summary.addShape(pptx.ShapeType.roundRect, { x, y, w, h: 1.85, rectRadius: 0.08, fill: { color: c.soft }, line: { color: c.soft, width: 0 } });
+    summary.addText(box.label.toUpperCase(), { x: x + 0.25, y: y + 0.2, w: w - 0.5, h: 0.24, fontFace: font, fontSize: 10, bold: true, color: box.color, charSpacing: 1.2, margin: 0 });
+    summary.addText(box.items.map((item) => ({ text: item, options: { bullet: { indent: 14 }, breakLine: true } })), { x: x + 0.25, y: y + 0.52, w: w - 0.5, h: 1.2, fontFace: font, fontSize: 14, color: c.ink, margin: 0, valign: "top", fit: "shrink", paraSpaceAfter: 4 });
+  });
+  if (snapshot.summary) summary.addNotes(clean(snapshot.summary));
+  // A short summary fits under the areas when there are no highlight boxes; otherwise it gets its own slide.
+  const inlineSummary = !boxes.length && clean(snapshot.summary).length > 0 && clean(snapshot.summary).length <= 320;
+  if (inlineSummary) {
+    eyebrow(summary, "Oppsummering", 4.85);
+    summary.addText(clean(snapshot.summary), { x: X, y: 5.2, w: CW, h: 1.4, fontFace: font, fontSize: 16, color: c.ink, margin: 0, valign: "top", fit: "shrink" });
+  }
+
+  // 3. Summary text, split if long
+  if (!inlineSummary && clean(snapshot.summary)) chunks(snapshot.summary, 900).forEach((part, index, all) => {
+    const s = base(kind);
+    eyebrow(s, index ? "Oppsummering (forts.)" : "Oppsummering", 0.8);
+    s.addText(part, { x: X, y: 1.3, w: CW * 0.82, h: 5.3, fontFace: font, fontSize: all.length > 1 || part.length > 500 ? 17 : 21, color: c.ink, margin: 0, valign: "top", fit: "shrink", paraSpaceAfter: 6 });
+  });
+
+  // 4. One slide per area, extra slides for comment overflow and photos beyond the first four
+  for (const [index, area] of reportAreas.entries()) {
+    const photos = await Promise.all(area.item.images.map((image) => loadPhoto(supabase, "report-images", image.path, image.caption)));
+    const s = base(kind), colors = selfCheck ? [c.ink, c.soft] : band(area.score), left = 4.55;
+    eyebrow(s, `Område ${index + 1} av ${reportAreas.length}`, 0.8, X, left);
+    title(s, area.label, 1.1, X, left, 32);
+    s.addText(formatScore(area.score), { x: X, y: 1.85, w: 2.3, h: 0.95, fontFace: font, fontSize: area.score === null ? 22 : 54, bold: true, color: colors[0], margin: 0 });
+    if (!selfCheck) pill(s, conceptLabel(area.score), X + 2.35, 2.2, colors, 2.0);
+    let y = 3.0;
+    if (area.item.needs_follow_up) { pill(s, "Krever oppfølging", X, y, [c.flag, c.flagSoft], 2.2); y += 0.5; }
+    const comment = chunks(area.item.comment || "Ingen kommentar.", photos.length ? 520 : 1200);
+    s.addText(comment[0], { x: X, y, w: photos.length ? left : CW * 0.82, h: H - 0.75 - y, fontFace: font, fontSize: 14, color: c.ink, margin: 0, valign: "top", fit: "shrink", paraSpaceAfter: 4 });
+    if (area.item.comment) s.addNotes(clean(area.item.comment));
+    const photoArea = { x: X + left + 0.35, y: 0.8, w: CW - left - 0.35, h: H - 0.8 - 0.75 };
+    const first = photos.slice(0, 4), cells = photoCells(first.length, photoArea);
+    first.forEach((image, photoIndex) => photo(s, image, cells[photoIndex], photoIndex + 1, area.item.images[photoIndex].caption));
+    comment.slice(1).forEach((part) => {
+      const more = base(kind);
+      eyebrow(more, `${area.label} · vurdering (forts.)`, 0.8);
+      more.addText(part, { x: X, y: 1.3, w: CW * 0.82, h: 5.3, fontFace: font, fontSize: 17, color: c.ink, margin: 0, valign: "top", fit: "shrink" });
+    });
+    for (let start = 4; start < photos.length; start += 6) {
+      const more = base(kind), batch = photos.slice(start, start + 6);
+      eyebrow(more, `${area.label} · bilder ${start + 1}–${start + batch.length} av ${photos.length}`, 0.8);
+      const grid = photoCells(Math.max(batch.length, 5), { x: X, y: 1.25, w: CW, h: H - 1.25 - 0.75 });
+      batch.forEach((image, offset) => photo(more, image, grid[offset], start + offset + 1, area.item.images[start + offset].caption));
     }
   }
-  if(snapshot.kind!=="self_check"){
-    function criteriaSlide(left:typeof criteriaSections[number][],right:typeof criteriaSections[number][],part:number){
-      const s=slide("Vurderingskriterier",`Originalmal · del ${part} av 2`);
-      s.addText("Under 6: under konsept     6: konsept     Over 6: over konsept",{x:.75,y:1.43,w:11.7,h:.27,fontFace:"Arial",fontSize:11,bold:true,color:navy,margin:0});
-      function column(sections:typeof criteriaSections[number][],x:number){
-        let y=1.86;const w=5.75;
-        for(const section of sections){
-          const color=section.grade==="1–2"||section.grade==="3–5"?red:section.grade==="9"||section.grade==="10"?green:navy;
-          s.addShape(pptx.ShapeType.line,{x,y:y+.34,w,h:0,line:{color:line,width:1}});
-          s.addText(`Karakter ${section.grade}`,{x,y,w,h:.3,fontFace:"Arial",fontSize:15,bold:true,color,margin:0});y+=.43;
-          for(const point of section.points){
-            const h=Math.max(.21,pieces(point,54).length*.21+.02);
-            s.addShape(pptx.ShapeType.ellipse,{x:x+.02,y:y+.075,w:.055,h:.055,line:{color:orange},fill:{color:orange}});
-            s.addText(point,{x:x+.2,y,w:w-.2,h,fontFace:"Arial",fontSize:11,color:navy,margin:0,fit:"shrink",valign:"top"});
-            y+=h+.04;
-          }
-          y+=.08;
-        }
-        if(y>6.95)throw new Error(`Vurderingskriteriene passer ikke på lysbildet: del ${part}, kolonne ${x}, høyde ${y.toFixed(2)}`);
-      }
-      column(left,.75);column(right,6.82);footer(s);
-    }
-    criteriaSlide([criteriaSections[0]],[criteriaSections[1]],1);
-    criteriaSlide([criteriaSections[2]],[criteriaSections[3],criteriaSections[4]],2);
+
+  // 5. Development over recent concept checks
+  const history = context?.history || [];
+  if (!selfCheck && history.length > 1) {
+    const s = base(kind);
+    eyebrow(s, "Utvikling", 0.8);
+    title(s, "Konseptsjekker i varehuset", 1.1);
+    const chart = { x: X, y: 2.1, w: CW, h: 3.9 }, slot = chart.w / history.length;
+    s.addShape(pptx.ShapeType.line, { x: chart.x, y: chart.y + chart.h, w: chart.w, h: 0, line: { color: c.line, width: 1 } });
+    s.addShape(pptx.ShapeType.line, { x: chart.x, y: chart.y + chart.h * 0.4, w: chart.w, h: 0, line: { color: c.ink, width: 0.75, dashType: "dash", transparency: 50 } });
+    history.forEach((point, index) => {
+      const h = chart.h * point.total / 10, x = chart.x + index * slot + slot * 0.2, w = slot * 0.6, current = index === history.length - 1;
+      s.addShape(pptx.ShapeType.rect, { x, y: chart.y + chart.h - h, w, h, fill: { color: current ? c.accent : "C9D3DD" }, line: { color: current ? c.accent : "C9D3DD", width: 0 } });
+      s.addText(formatScore(point.total), { x, y: chart.y + chart.h - h - 0.34, w, h: 0.28, fontFace: font, fontSize: 12, bold: current, color: current ? c.ink : c.muted, align: "center", margin: 0 });
+      s.addText(formatDate(point.date), { x, y: chart.y + chart.h + 0.08, w, h: 0.26, fontFace: font, fontSize: 10, color: c.muted, align: "center", margin: 0 });
+    });
+    s.addText("Stiplet linje viser konsept (karakter 6). Søylene starter på 0.", { x: X, y: chart.y + chart.h + 0.45, w: CW, h: 0.24, fontFace: font, fontSize: 10, color: c.muted, margin: 0 });
   }
-  slides.forEach((s,i)=>s.addText(`${i+1} / ${slides.length}`,{x:12.12,y:7.21,w:.45,h:.2,fontFace:"Arial",fontSize:8,color:muted,margin:0,align:"right"}));
-  const output=await pptx.write({outputType:"nodebuffer"});return new Uint8Array(output as Uint8Array);
+
+  // 6. Criteria, two balanced columns per slide
+  if (!selfCheck) {
+    const [left, right] = balanceColumns(criteriaSections);
+    const parts = [[left.slice(0, 1), left.slice(1)], [right.slice(0, Math.ceil(right.length / 2)), right.slice(Math.ceil(right.length / 2))]].map((columns) => columns.filter((column) => column.length));
+    parts.forEach((columns, part) => {
+      const s = base(kind);
+      eyebrow(s, `Vedlegg · del ${part + 1} av ${parts.length}`, 0.8);
+      title(s, "Vurderingskriterier", 1.05, X, CW, 26);
+      s.addText("Skala 1–10. Karakter 6 er konsept. Under 6 er under konsept, over 6 er over konsept.", { x: X, y: 1.68, w: CW, h: 0.24, fontFace: font, fontSize: 11, color: c.muted, margin: 0 });
+      columns.forEach((sections, column) => {
+        const x = X + column * (CW / 2 + 0.15), w = CW / 2 - 0.15;
+        const runs = sections.flatMap((section) => {
+          const color = section.grade === "1–2" || section.grade === "3–5" ? c.bad : section.grade === "9" || section.grade === "10" ? c.good : c.mid;
+          return [{ text: `Karakter ${section.grade}`, options: { bold: true, fontSize: 14, color, breakLine: true, paraSpaceBefore: 6 } }, ...section.points.map((point) => ({ text: point, options: { bullet: { indent: 12 }, fontSize: 10.5, color: c.ink, breakLine: true } }))];
+        });
+        s.addText(runs, { x, y: 2.1, w, h: H - 2.1 - 0.7, fontFace: font, margin: 0, valign: "top", fit: "shrink", paraSpaceAfter: 2 });
+      });
+    });
+  }
+
+  slides.forEach((s, index) => { if (index) s.addText(`${index + 1} / ${slides.length}`, { x: W - X - 1, y: H - 0.4, w: 1, h: 0.2, fontFace: font, fontSize: 8, color: c.faint, align: "right", margin: 0 }); });
+  const output = await pptx.write({ outputType: "nodebuffer" });
+  return new Uint8Array(output as Uint8Array);
 }

@@ -13,7 +13,7 @@ export async function POST(_request:Request,{params}:{params:Promise<{versionId:
   const {data:snapshot,error}=await auth.supabase.from("publication_snapshots").select("content").eq("version_id",versionId).maybeSingle();
   if(error||!snapshot)return apiError("Rapport finnes ikke eller du mangler tilgang",404);
   try{
-    const bytes=await buildReportPptx(snapshot.content as Parameters<typeof buildReportPptx>[0],createAdminClient());
+    const bytes=await buildReportPptx(snapshot.content as Parameters<typeof buildReportPptx>[0],createAdminClient(),versionId);
     return new Response(Buffer.from(bytes),{headers:{"Content-Type":"application/vnd.openxmlformats-officedocument.presentationml.presentation","Content-Disposition":`attachment; filename="driftssjekk-${versionId}.pptx"`,"Cache-Control":"private, no-store","X-Content-Type-Options":"nosniff"}});
   }catch{return apiError("Kunne ikke lage PowerPoint. Prøv igjen.",500);}
 }
