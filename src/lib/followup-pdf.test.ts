@@ -13,7 +13,7 @@ describe("oppfølgingsrapport", () => {
       { areaKey: "drive_in", createdAt: "2026-10-09T12:00:00Z" },
       { areaKey: "drive_in", createdAt: "2026-10-09T08:00:00Z" },
     ]);
-    expect(sorted.map((task) => `${task.areaKey}@${task.createdAt.slice(11, 13)}`)).toEqual(["drive_in@08", "drive_in@12", "outdoor@10", "null@10"]);
+    expect(sorted.map((task) => `${task.areaKey}@${task.createdAt.slice(11, 13)}`)).toEqual(["outdoor@10", "drive_in@08", "drive_in@12", "null@10"]);
   });
   it("lager PDF med oppgaver, svar og bilder", async () => {
     const photo = await sharp({ create: { width: 900, height: 600, channels: 3, background: "#55758b" } }).jpeg().toBuffer();

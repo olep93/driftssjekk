@@ -1,8 +1,9 @@
+/** Walk order through the store, used everywhere: the app, the draft, the PDF and the deck. */
 export const areas = [
-  { key: "drive_in", label: "Drive-In" },
-  { key: "store", label: "Butikk" },
   { key: "outdoor", label: "Uteområde" },
+  { key: "store", label: "Butikk" },
   { key: "goods_receiving", label: "Varemottak" },
+  { key: "drive_in", label: "Drive-In" },
 ] as const;
 
 export type AreaKey = (typeof areas)[number]["key"];

@@ -156,31 +156,32 @@ export async function buildReportPptx(snapshot: ReportSnapshot, supabase: Supaba
     s.addText(part, { x: X, y: 1.3, w: CW * 0.82, h: 5.3, fontFace: font, fontSize: all.length > 1 || part.length > 500 ? 17 : 21, color: c.ink, margin: 0, valign: "top", fit: "shrink", paraSpaceAfter: 6 });
   });
 
-  // 4. One slide per area, extra slides for comment overflow and photos beyond the first four
+  // 4. Each area in turn: a front slide with the score and assessment, then all of its photos,
+  // before the next area starts. Up to four photos share one slide; larger sets use six per slide.
   for (const [index, area] of reportAreas.entries()) {
     const photos = await Promise.all(area.item.images.map((image) => loadPhoto(supabase, "report-images", image.path, image.caption)));
-    const s = base(kind), colors = selfCheck ? [c.ink, c.soft] : band(area.score), left = 4.55;
-    eyebrow(s, `Område ${index + 1} av ${reportAreas.length}`, 0.8, X, left);
-    title(s, area.label, 1.1, X, left, 32);
-    s.addText(formatScore(area.score), { x: X, y: 1.85, w: 2.3, h: 0.95, fontFace: font, fontSize: area.score === null ? 22 : 54, bold: true, color: colors[0], margin: 0 });
-    if (!selfCheck) pill(s, conceptLabel(area.score), X + 2.35, 2.2, colors, 2.0);
-    let y = 3.0;
-    if (area.item.needs_follow_up) { pill(s, "Krever oppfølging", X, y, [c.flag, c.flagSoft], 2.2); y += 0.5; }
-    const comment = chunks(area.item.comment || "Ingen kommentar.", photos.length ? 520 : 1200);
-    s.addText(comment[0], { x: X, y, w: photos.length ? left : CW * 0.82, h: H - 0.75 - y, fontFace: font, fontSize: 14, color: c.ink, margin: 0, valign: "top", fit: "shrink", paraSpaceAfter: 4 });
+    const s = base(kind), colors = selfCheck ? [c.ink, c.soft] : band(area.score);
+    eyebrow(s, `Område ${index + 1} av ${reportAreas.length}`, 0.8);
+    title(s, area.label, 1.1, X, CW, 34);
+    s.addText(formatScore(area.score), { x: X, y: 1.95, w: 2.6, h: 1.05, fontFace: font, fontSize: area.score === null ? 22 : 60, bold: true, color: colors[0], margin: 0 });
+    if (!selfCheck) pill(s, conceptLabel(area.score), X + 2.75, 2.35, colors, 2.0);
+    if (area.item.needs_follow_up) pill(s, "Krever oppfølging", X + 4.95, 2.35, [c.flag, c.flagSoft], 2.2);
+    s.addText(photos.length ? `${photos.length} ${photos.length === 1 ? "bilde" : "bilder"} på ${photos.length > 6 ? "de neste lysbildene" : "neste lysbilde"}` : "Ingen bilder fra området", { x: X, y: 3.1, w: 6, h: 0.26, fontFace: font, fontSize: 11, color: c.muted, margin: 0 });
+    eyebrow(s, "Vurdering", 3.65);
+    const comment = chunks(area.item.comment || "Ingen kommentar.", 900);
+    s.addText(comment[0], { x: X, y: 4.0, w: CW * 0.86, h: H - 0.75 - 4.0, fontFace: font, fontSize: 17, color: c.ink, margin: 0, valign: "top", fit: "shrink", paraSpaceAfter: 4 });
     if (area.item.comment) s.addNotes(clean(area.item.comment));
-    const photoArea = { x: X + left + 0.35, y: 0.8, w: CW - left - 0.35, h: H - 0.8 - 0.75 };
-    const first = photos.slice(0, 4), cells = photoCells(first.length, photoArea);
-    first.forEach((image, photoIndex) => photo(s, image, cells[photoIndex], photoIndex + 1, area.item.images[photoIndex].caption));
     comment.slice(1).forEach((part) => {
       const more = base(kind);
       eyebrow(more, `${area.label} · vurdering (forts.)`, 0.8);
-      more.addText(part, { x: X, y: 1.3, w: CW * 0.82, h: 5.3, fontFace: font, fontSize: 17, color: c.ink, margin: 0, valign: "top", fit: "shrink" });
+      more.addText(part, { x: X, y: 1.3, w: CW * 0.86, h: 5.3, fontFace: font, fontSize: 17, color: c.ink, margin: 0, valign: "top", fit: "shrink" });
     });
-    for (let start = 4; start < photos.length; start += 6) {
-      const more = base(kind), batch = photos.slice(start, start + 6);
-      eyebrow(more, `${area.label} · bilder ${start + 1}–${start + batch.length} av ${photos.length}`, 0.8);
-      const grid = photoCells(Math.max(batch.length, 5), { x: X, y: 1.25, w: CW, h: H - 1.25 - 0.75 });
+    const perSlide = photos.length <= 4 ? 4 : 6;
+    for (let start = 0; start < photos.length; start += perSlide) {
+      const more = base(kind), batch = photos.slice(start, start + perSlide);
+      eyebrow(more, photos.length === 1 ? `${area.label} · bilde` : `${area.label} · bilder ${start + 1}–${start + batch.length} av ${photos.length}`, 0.8);
+      // A short last batch keeps the six-photo size so photos do not grow on the final slide.
+      const grid = photoCells(perSlide === 6 ? Math.max(batch.length, 5) : batch.length, { x: X, y: 1.25, w: CW, h: H - 1.25 - 0.75 });
       batch.forEach((image, offset) => photo(more, image, grid[offset], start + offset + 1, area.item.images[start + offset].caption));
     }
   }
