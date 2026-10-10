@@ -75,14 +75,29 @@ export async function buildReportPptx(snapshot: ReportSnapshot, supabase: Supaba
     s.addText(`${snapshot.store_name} · ${date}`, { x: X, y: H - 0.4, w: 8, h: 0.2, fontFace: font, fontSize: 8, color: c.faint, margin: 0 });
     return s;
   }
+  // Labels mirror the PDF's mono labels: small, spaced capitals.
   function eyebrow(s: PptxGenJS.Slide, text: string, y: number, x = X, w = CW) {
-    s.addText(text.toUpperCase(), { x, y, w, h: 0.24, fontFace: font, fontSize: 10, bold: true, color: c.accent, charSpacing: 1.5, margin: 0 });
+    s.addText(text.toUpperCase(), { x, y, w, h: 0.24, fontFace: font, fontSize: 9, color: c.accent, charSpacing: 2.5, margin: 0 });
+  }
+  function label(s: PptxGenJS.Slide, text: string, x: number, y: number, w: number, color = c.muted) {
+    s.addText(text.toUpperCase(), { x, y, w, h: 0.2, fontFace: font, fontSize: 8, color, charSpacing: 2.2, margin: 0 });
   }
   function title(s: PptxGenJS.Slide, text: string, y: number, x = X, w = CW, size = 30) {
     s.addText(text, { x, y, w, h: 0.66, fontFace: display, fontSize: size + 2, bold: true, color: c.ink, margin: 0, fit: "shrink", valign: "top" });
   }
-  function pill(s: PptxGenJS.Slide, text: string, x: number, y: number, colors: string[], w = 2.4) {
-    s.addText(text, { x, y, w, h: 0.32, fontFace: font, fontSize: 11, bold: true, color: colors[0], fill: { color: colors[1] }, align: "center", margin: 0 });
+  function pill(s: PptxGenJS.Slide, text: string, x: number, y: number, colors: string[], w = 1.7) {
+    s.addText(text, { x, y, w, h: 0.28, fontFace: font, fontSize: 10, bold: true, color: colors[0], fill: { color: colors[1] }, align: "center", margin: 0 });
+  }
+  /** The PDF's 1–10 scale: red to the concept line at 6, green after, with a marker at the score. */
+  function scaleBar(s: PptxGenJS.Slide, x: number, y: number, w: number, score: number | null) {
+    const at = (value: number) => x + w * (value - 1) / 9;
+    block(s, x, y, at(6) - x, 0.09, "F0D6D2");
+    block(s, at(6), y, x + w - at(6), 0.09, "D6E9DF");
+    block(s, at(6) - 0.01, y - 0.05, 0.02, 0.19, c.ink);
+    if (score !== null) s.addText("●", { x: at(score) - 0.15, y: y - 0.11, w: 0.3, h: 0.3, fontFace: font, fontSize: 15, color: c.ink, align: "center", valign: "middle", margin: 0 });
+    s.addText("1", { x, y: y + 0.18, w: 0.4, h: 0.2, fontFace: font, fontSize: 8, color: c.muted, margin: 0 });
+    s.addText("6 = konsept", { x: at(6) - 0.6, y: y + 0.18, w: 1.2, h: 0.2, fontFace: font, fontSize: 8, color: c.muted, align: "center", margin: 0 });
+    s.addText("10", { x: x + w - 0.4, y: y + 0.18, w: 0.4, h: 0.2, fontFace: font, fontSize: 8, color: c.muted, align: "right", margin: 0 });
   }
   function photo(s: PptxGenJS.Slide, image: ReportPhoto | null, cell: Box, number: number, caption: string) {
     s.addShape(pptx.ShapeType.rect, { x: cell.x, y: cell.y, w: cell.w, h: cell.h, fill: { color: c.soft }, line: { color: c.soft, width: 0 } });
@@ -94,84 +109,96 @@ export async function buildReportPptx(snapshot: ReportSnapshot, supabase: Supaba
     if (caption) s.addText(clip(clean(caption), cell.w > 3 ? 140 : 80), { x: cell.x, y: cell.y + cell.h + 0.05, w: cell.w, h: 0.26, fontFace: font, fontSize: 9.5, color: c.muted, margin: 0, fit: "shrink", valign: "top" });
   }
 
-  // 1. Title
-  const cover = pptx.addSlide(); slides.push(cover); cover.background = { color: c.ink };
-  cover.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: 0.18, h: H, fill: { color: c.accent }, line: { color: c.accent, width: 0 } });
-  cover.addText("DRIFTSSJEKK", { x: X + 0.1, y: 0.55, w: 5, h: 0.26, fontFace: font, fontSize: 11, bold: true, color: "A9B6C6", charSpacing: 2, margin: 0 });
-  cover.addText(kind.toUpperCase(), { x: X + 0.1, y: 2.0, w: 11, h: 0.3, fontFace: font, fontSize: 13, bold: true, color: "8FB8CC", charSpacing: 1.5, margin: 0 });
-  cover.addText(snapshot.store_name, { x: X + 0.1, y: 2.4, w: 11.6, h: 0.95, fontFace: display, fontSize: 44, bold: true, color: c.white, margin: 0, fit: "shrink" });
-  cover.addText([snapshot.cooperative_name, snapshot.round_title, date].filter(Boolean).join("  ·  "), { x: X + 0.1, y: 3.4, w: 11.6, h: 0.32, fontFace: font, fontSize: 15, color: "C3CEDA", margin: 0 });
-  const coverScoreColor = selfCheck ? c.white : conceptBand(snapshot.total) === "above" ? "7FD1AB" : conceptBand(snapshot.total) === "below" ? "F0A39B" : c.white;
-  cover.addText(formatScore(snapshot.total), { x: X + 0.1, y: 4.35, w: 3.6, h: 1.25, fontFace: display, fontSize: snapshot.total === null ? 28 : 72, bold: true, color: coverScoreColor, margin: 0 });
-  const coverLines = [selfCheck ? "Driftskarakter · intern progresjon" : partial ? "Delvurdering av tildelte områder" : conceptLabel(snapshot.total)];
+  // 1. Front slide, laid out like the PDF's first page: name and result box on the left, the areas on the right.
+  const front = base(kind);
+  eyebrow(front, [snapshot.cooperative_name, snapshot.round_title].filter(Boolean).join(" · "), 0.8, X, 5.9);
+  front.addText(snapshot.store_name, { x: X, y: 1.05, w: 5.9, h: 0.85, fontFace: display, fontSize: 40, bold: true, color: c.ink, margin: 0, fit: "shrink", valign: "top" });
+  front.addText(`Besøk ${date} · Vurdert av ${snapshot.assessor_name || "ukjent"}${snapshot.version_no > 1 ? ` · Versjon ${snapshot.version_no}` : ""}`, { x: X, y: 1.9, w: 5.9, h: 0.26, fontFace: font, fontSize: 11, color: c.muted, margin: 0 });
+  const box = { x: X, y: 2.5, w: 5.9, h: 2.75 };
+  block(front, box.x, box.y, box.w, box.h, c.soft);
+  label(front, selfCheck ? "Driftskarakter" : partial ? "Delvurdering" : "Totalkarakter", box.x + 0.3, box.y + 0.3, 2.6);
+  front.addText(formatScore(snapshot.total), { x: box.x + 0.25, y: box.y + 0.6, w: 2.7, h: 1.45, fontFace: display, fontSize: snapshot.total === null ? 26 : 88, bold: true, color: selfCheck ? c.ink : band(snapshot.total)[0], margin: 0, valign: "top" });
+  const side = box.x + 3.05, sideW = box.w - 3.05 - 0.3;
+  if (selfCheck) pill(front, "Intern progresjon", side, box.y + 0.32, [c.mid, c.midSoft], 1.8);
+  else pill(front, partial ? "Tildelte områder" : conceptLabel(snapshot.total), side, box.y + 0.32, band(snapshot.total));
+  const comparisons: string[] = [];
   if (!selfCheck && context?.previousTotal != null && snapshot.total !== null) {
     const delta = snapshot.total - context.previousTotal;
-    coverLines.push(Math.abs(delta) < 0.005 ? "Samme som forrige konseptsjekk" : `${delta > 0 ? "+" : "−"}${formatScore(Math.abs(delta))} siden forrige konseptsjekk`);
+    comparisons.push(Math.abs(delta) < 0.005 ? "Samme som forrige konseptsjekk" : `${delta > 0 ? "+" : "−"}${formatScore(Math.abs(delta))} siden forrige konseptsjekk`);
   }
-  if (!selfCheck && context?.peer) coverLines.push(context.peer === "above" ? "Over snittet i samvirkelaget" : context.peer === "below" ? "Under snittet i samvirkelaget" : "På snittet i samvirkelaget");
-  cover.addText(coverLines.join("\n"), { x: X + 3.2, y: 4.55, w: 7.5, h: 1.0, fontFace: font, fontSize: 15, color: "C3CEDA", margin: 0, valign: "top", breakLine: false });
-  cover.addText(`Vurdert av ${snapshot.assessor_name || "ukjent"}${snapshot.version_no > 1 ? ` · versjon ${snapshot.version_no}` : ""}`, { x: X + 0.1, y: H - 0.62, w: 10, h: 0.24, fontFace: font, fontSize: 10, color: "8E9BAC", margin: 0 });
-
-  // 2. Summary: headline, total and the area bars
-  const summary = base(kind);
-  title(summary, summaryHeadline(snapshot.kind, snapshot.total, reportAreas.map((area) => ({ label: area.label, score: area.score }))), 0.75);
-  summary.addText(selfCheck ? "DRIFTSKARAKTER" : partial ? "DELVURDERING" : "TOTALKARAKTER", { x: X, y: 1.75, w: 3.4, h: 0.24, fontFace: font, fontSize: 9.5, bold: true, color: c.muted, charSpacing: 1.2, margin: 0 });
-  summary.addText(formatScore(snapshot.total), { x: X, y: 2.05, w: 3.4, h: 1.15, fontFace: display, fontSize: snapshot.total === null ? 24 : 66, bold: true, color: selfCheck ? c.ink : band(snapshot.total)[0], margin: 0 });
-  if (!selfCheck) pill(summary, partial ? "Tildelte områder" : conceptLabel(snapshot.total), X, 3.3, band(snapshot.total));
-  const rowsX = X + 4.1, rowsW = CW - 4.1, barX = rowsX + 2.2, barW = rowsW - 3.3;
+  if (!selfCheck && context?.peer) comparisons.push(context.peer === "above" ? "Over snittet i samvirkelaget" : context.peer === "below" ? "Under snittet i samvirkelaget" : "På snittet i samvirkelaget");
+  if (comparisons.length) front.addText(comparisons.join("\n"), { x: side, y: box.y + 0.75, w: sideW, h: 0.6, fontFace: font, fontSize: 10, color: c.ink, margin: 0, valign: "top", paraSpaceAfter: 2 });
+  if (!selfCheck) scaleBar(front, side, box.y + 1.8, sideW, snapshot.total);
+  const right = X + 6.35, rightW = CW - 6.35;
+  front.addText(summaryHeadline(snapshot.kind, snapshot.total, reportAreas.map((area) => ({ label: area.label, score: area.score }))), { x: right, y: 0.8, w: rightW, h: 1.0, fontFace: display, fontSize: 24, bold: true, color: c.ink, margin: 0, valign: "top", fit: "shrink" });
+  const barX = right + 1.55, barW = rightW - 1.55 - 0.95;
   reportAreas.forEach((area, index) => {
-    const y = 1.85 + index * 0.68, colors = selfCheck ? [c.accent, c.soft] : band(area.score);
-    summary.addText(area.label, { x: rowsX, y, w: 2.1, h: 0.4, fontFace: font, fontSize: 15, bold: true, color: c.ink, margin: 0, valign: "middle" });
-    block(summary, barX, y + 0.14, barW, 0.13, c.soft);
+    const y = 2.5 + index * 0.66, colors = selfCheck ? [c.accent, c.soft] : band(area.score);
+    front.addText(area.label, { x: right, y, w: 1.5, h: 0.4, fontFace: font, fontSize: 12.5, bold: true, color: c.ink, margin: 0, valign: "middle" });
+    block(front, barX, y + 0.15, barW, 0.11, c.soft);
     // A score of 1 still shows a short stub, so the bar never looks missing.
-    if (area.score !== null) block(summary, barX, y + 0.14, Math.max(0.1, barW * (area.score - 1) / 9), 0.13, colors[0]);
-    if (!selfCheck) block(summary, barX + barW * 5 / 9 - 0.008, y + 0.04, 0.016, 0.33, "8F9AA8");
-    summary.addText(formatScore(area.score), { x: rowsX + rowsW - 1.0, y, w: 1.0, h: 0.4, fontFace: display, fontSize: 19, bold: true, color: selfCheck ? c.ink : colors[0], align: "right", margin: 0, valign: "middle" });
-    block(summary, rowsX, y + 0.55, rowsW, 0.01, c.line);
+    if (area.score !== null) block(front, barX, y + 0.15, Math.max(0.08, barW * (area.score - 1) / 9), 0.11, colors[0]);
+    if (!selfCheck) block(front, barX + barW * 5 / 9 - 0.01, y + 0.06, 0.02, 0.29, c.ink);
+    front.addText(formatScore(area.score), { x: right + rightW - 0.9, y, w: 0.9, h: 0.4, fontFace: display, fontSize: 19, bold: true, color: selfCheck ? c.ink : colors[0], align: "right", margin: 0, valign: "middle" });
+    block(front, right, y + 0.54, rightW, 0.01, c.line);
   });
-  // Scale under the bars, with the concept grade highlighted.
-  const scaleY = 1.85 + reportAreas.length * 0.68 - 0.05;
+  const scaleY = 2.5 + reportAreas.length * 0.66 + 0.02;
   for (let grade = 1; grade <= 10; grade++) {
     const concept = grade === 6 && !selfCheck;
-    summary.addText(String(grade), { x: barX + barW * (grade - 1) / 9 - 0.2, y: scaleY, w: 0.4, h: 0.24, fontFace: font, fontSize: concept ? 11 : 9.5, bold: concept, color: concept ? c.ink : c.faint, align: "center", margin: 0 });
+    front.addText(String(grade), { x: barX + barW * (grade - 1) / 9 - 0.2, y: scaleY, w: 0.4, h: 0.22, fontFace: concept ? display : font, fontSize: concept ? 11 : 8, bold: concept, color: concept ? c.ink : c.faint, align: "center", margin: 0 });
   }
-  if (!selfCheck) summary.addText("konsept", { x: barX + barW * 5 / 9 - 0.5, y: scaleY + 0.22, w: 1.0, h: 0.2, fontFace: font, fontSize: 8.5, color: c.muted, align: "center", margin: 0 });
-  const boxes = [{ label: "Styrker", items: context?.strengths || [], color: c.good }, { label: "Forbedringer", items: context?.improvements || [], color: c.bad }].filter((box) => box.items.length);
-  boxes.forEach((box, index) => {
-    const w = (CW - 0.3) / 2, x = X + index * (w + 0.3), y = 5.05;
-    block(summary, x, y, w, 1.7, c.soft);
-    summary.addText(box.label.toUpperCase(), { x: x + 0.25, y: y + 0.2, w: w - 0.5, h: 0.24, fontFace: font, fontSize: 10, bold: true, color: box.color, charSpacing: 1.2, margin: 0 });
-    summary.addText(box.items.map((item) => ({ text: item, options: { bullet: { indent: 14 }, breakLine: true } })), { x: x + 0.25, y: y + 0.5, w: w - 0.5, h: 1.08, fontFace: font, fontSize: 14, color: c.ink, margin: 0, valign: "top", fit: "shrink", paraSpaceAfter: 4 });
-  });
-  if (snapshot.summary) summary.addNotes(clean(snapshot.summary));
-  // A short summary fits under the areas when there are no highlight boxes; otherwise it gets its own slide.
-  const inlineSummary = !boxes.length && clean(snapshot.summary).length > 0 && clean(snapshot.summary).length <= 320;
-  if (inlineSummary) {
-    eyebrow(summary, "Oppsummering", 5.1);
-    summary.addText(clean(snapshot.summary), { x: X, y: 5.42, w: CW, h: 1.25, fontFace: font, fontSize: 16, color: c.ink, margin: 0, valign: "top", fit: "shrink" });
-  }
+  if (!selfCheck) front.addText("KONSEPT", { x: barX + barW * 5 / 9 - 0.5, y: scaleY + 0.21, w: 1.0, h: 0.18, fontFace: font, fontSize: 6.5, color: c.muted, charSpacing: 1.5, align: "center", margin: 0 });
+  if (snapshot.summary) front.addNotes(clean(snapshot.summary));
 
-  // 3. Summary text, split if long
-  if (!inlineSummary && clean(snapshot.summary)) chunks(snapshot.summary, 900).forEach((part, index, all) => {
+  // 2. Strengths, improvements and the summary, like the lower half of the PDF's first page.
+  const boxes = [{ label: "Styrker", items: context?.strengths || [], color: c.good }, { label: "Forbedringer", items: context?.improvements || [], color: c.bad }].filter((item) => item.items.length);
+  // A short summary without highlight boxes sits under the result on the front slide, as in the PDF.
+  const inlineSummary = !boxes.length && clean(snapshot.summary).length > 0 && clean(snapshot.summary).length <= 300;
+  if (inlineSummary) {
+    block(front, X, 5.62, CW, 0.01, c.line);
+    label(front, "Oppsummering", X, 5.8, 4);
+    front.addText(clean(snapshot.summary), { x: X, y: 6.08, w: CW, h: 0.75, fontFace: font, fontSize: 13, color: c.ink, margin: 0, valign: "top", fit: "shrink" });
+  }
+  const summaryParts = !inlineSummary && clean(snapshot.summary) ? chunks(snapshot.summary, boxes.length ? 650 : 1000) : [];
+  if (boxes.length || summaryParts.length) {
     const s = base(kind);
-    eyebrow(s, index ? "Oppsummering (forts.)" : "Oppsummering", 0.8);
-    s.addText(part, { x: X, y: 1.3, w: CW * 0.82, h: 5.3, fontFace: font, fontSize: all.length > 1 || part.length > 500 ? 17 : 21, color: c.ink, margin: 0, valign: "top", fit: "shrink", paraSpaceAfter: 6 });
-  });
+    eyebrow(s, "Sammendrag", 0.8);
+    title(s, boxes.length ? "Styrker og forbedringer" : "Oppsummering", 1.05);
+    let y = 1.9;
+    boxes.forEach((item, index) => {
+      const w = boxes.length === 1 ? CW : (CW - 0.3) / 2, x = X + index * (w + 0.3);
+      block(s, x, y, w, 1.85, c.soft);
+      label(s, item.label, x + 0.3, y + 0.28, w - 0.6, item.color);
+      s.addText(item.items.map((text) => ({ text, options: { bullet: { indent: 14 }, breakLine: true } })), { x: x + 0.3, y: y + 0.6, w: w - 0.6, h: 1.1, fontFace: font, fontSize: 14, color: c.ink, margin: 0, valign: "top", fit: "shrink", paraSpaceAfter: 5 });
+    });
+    if (boxes.length) y += 2.2;
+    if (summaryParts.length) {
+      if (boxes.length) label(s, "Oppsummering", X, y, 4);
+      s.addText(summaryParts[0], { x: X, y: boxes.length ? y + 0.3 : y, w: CW * 0.86, h: H - 0.75 - (boxes.length ? y + 0.3 : y), fontFace: font, fontSize: boxes.length ? 14 : 17, color: c.ink, margin: 0, valign: "top", fit: "shrink", paraSpaceAfter: 5 });
+    }
+    summaryParts.slice(1).forEach((part) => {
+      const more = base(kind);
+      eyebrow(more, "Oppsummering (forts.)", 0.8);
+      more.addText(part, { x: X, y: 1.3, w: CW * 0.86, h: 5.3, fontFace: font, fontSize: 17, color: c.ink, margin: 0, valign: "top", fit: "shrink", paraSpaceAfter: 5 });
+    });
+  }
 
   // 4. Each area in turn: a front slide with the score and assessment, then all of its photos,
   // before the next area starts. Up to four photos share one slide; larger sets use six per slide.
   for (const [index, area] of reportAreas.entries()) {
     const photos = await Promise.all(area.item.images.map((image) => loadPhoto(supabase, "report-images", image.path, image.caption)));
+    // Like the PDF's area page: name on the left, score and verdict on the right, a rule, then the assessment.
     const s = base(kind), colors = selfCheck ? [c.ink, c.soft] : band(area.score);
-    eyebrow(s, `Område ${index + 1} av ${reportAreas.length}`, 0.8);
-    title(s, area.label, 1.1, X, CW, 34);
-    s.addText(formatScore(area.score), { x: X, y: 1.95, w: 2.6, h: 1.05, fontFace: display, fontSize: area.score === null ? 22 : 60, bold: true, color: colors[0], margin: 0 });
-    if (!selfCheck) pill(s, conceptLabel(area.score), X + 2.15, 2.35, colors, 2.0);
-    if (area.item.needs_follow_up) pill(s, "Krever oppfølging", X + 4.3, 2.35, [c.flag, c.flagSoft], 2.2);
-    s.addText(photos.length ? `${photos.length} ${photos.length === 1 ? "bilde" : "bilder"} på ${photos.length > 6 ? "de neste lysbildene" : "neste lysbilde"}` : "Ingen bilder fra området", { x: X, y: 3.1, w: 6, h: 0.26, fontFace: font, fontSize: 11, color: c.muted, margin: 0 });
-    eyebrow(s, "Vurdering", 3.65);
+    eyebrow(s, `Område ${index + 1} av ${reportAreas.length}`, 0.85, X, 7);
+    s.addText(area.label, { x: X, y: 1.12, w: 8, h: 0.95, fontFace: display, fontSize: 46, bold: true, color: c.ink, margin: 0, valign: "top", fit: "shrink" });
+    s.addText(formatScore(area.score), { x: W - X - 3.2, y: 0.7, w: 3.2, h: 1.2, fontFace: display, fontSize: area.score === null ? 24 : 70, bold: true, color: colors[0], align: "right", margin: 0, valign: "top" });
+    if (!selfCheck) pill(s, conceptLabel(area.score), W - X - 1.7, 1.98, colors);
+    block(s, X, 2.42, CW, 0.025, c.ink);
+    label(s, "Vurdering", X, 2.7, 3);
+    if (area.item.needs_follow_up) pill(s, "Krever oppfølging", W - X - 1.9, 2.62, [c.flag, c.flagSoft], 1.9);
     const comment = chunks(area.item.comment || "Ingen kommentar.", 900);
-    s.addText(comment[0], { x: X, y: 4.0, w: CW * 0.86, h: H - 0.75 - 4.0, fontFace: font, fontSize: 17, color: c.ink, margin: 0, valign: "top", fit: "shrink", paraSpaceAfter: 4 });
+    s.addText(comment[0], { x: X, y: 3.02, w: CW * 0.86, h: H - 0.95 - 3.02, fontFace: font, fontSize: 16, color: c.ink, margin: 0, valign: "top", fit: "shrink", paraSpaceAfter: 4 });
+    label(s, photos.length ? `Bilder · ${photos.length} på ${photos.length > 6 ? "de neste lysbildene" : "neste lysbilde"}` : "Ingen bilder fra området", X, H - 0.82, 8);
     if (area.item.comment) s.addNotes(clean(area.item.comment));
     comment.slice(1).forEach((part) => {
       const more = base(kind);
@@ -226,7 +253,7 @@ export async function buildReportPptx(snapshot: ReportSnapshot, supabase: Supaba
     });
   }
 
-  slides.forEach((s, index) => { if (index) s.addText(`${index + 1} / ${slides.length}`, { x: W - X - 1, y: H - 0.4, w: 1, h: 0.2, fontFace: font, fontSize: 8, color: c.faint, align: "right", margin: 0 }); });
+  slides.forEach((s, index) => { s.addText(`${index + 1} / ${slides.length}`, { x: W - X - 1, y: H - 0.4, w: 1, h: 0.2, fontFace: font, fontSize: 8, color: c.faint, align: "right", margin: 0 }); });
   const output = await pptx.write({ outputType: "nodebuffer" });
   return new Uint8Array(output as Uint8Array);
 }
