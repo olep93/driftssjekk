@@ -30,5 +30,11 @@ describe("fremdrift per varehus", () => {
     expect(result.tasks).toMatchObject({ created: 3, done: 1, open: 2, overdue: 1, averageDaysToDone: 10 });
     expect(result.tasks.openList.map((item) => item.id)).toEqual(["b", "c"]);
     expect(result.series.find((month) => month.month === "2026-08")).toMatchObject({ conceptTotal: 9.625, monthlyTotal: null });
+    expect(result.areaSource).toBe("monthly");
+  });
+  it("viser konseptsjekkene per område når perioden mangler månedlige gjennomganger", () => {
+    const result = storeProgress([report("c1", "inspection", "2026-04-08", 9, 8), report("c2", "inspection", "2026-08-18", 9.5, 10)], [], "year", "2026-10-10");
+    expect(result.areaSource).toBe("concept");
+    expect(result.areaTrends.find((area) => area.key === "outdoor")).toMatchObject({ latest: 10, change: 2 });
   });
 });

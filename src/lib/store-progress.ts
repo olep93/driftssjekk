@@ -41,21 +41,25 @@ export function storeProgress(reports: ProgressReport[], tasks: ProgressTask[], 
       month, label: monthLabel(month),
       monthlyTotal: review?.total ?? null, conceptTotal: check?.total ?? null,
       areas: Object.fromEntries(areas.map((area) => [area.key, review?.areas[area.key] ?? null])) as Record<AreaKey, number | null>,
+      conceptAreas: Object.fromEntries(areas.map((area) => [area.key, check?.areas[area.key] ?? null])) as Record<AreaKey, number | null>,
       created: tasks.filter((task) => monthOf(task.createdAt) === month).length,
       done: tasks.filter((task) => task.status === "done" && monthOf(task.updatedAt) === month).length,
     };
   });
   const periodMonthly = monthly.filter((report) => inPeriod(report.date) && report.total !== null).sort((a, b) => a.date.localeCompare(b.date));
-  // Change per area across the period's monthly reviews: first scored value against the latest.
+  // Areas follow the monthly reviews; a store without any in the period falls back to its concept checks.
+  const areaSource: "monthly" | "concept" = periodMonthly.length ? "monthly" : "concept";
+  const areaReports = areaSource === "monthly" ? periodMonthly : concept.filter((report) => inPeriod(report.date) && report.total !== null).sort((a, b) => a.date.localeCompare(b.date));
+  // Change per area across the period: first scored value against the latest.
   const areaTrends = areas.map((area) => {
-    const values = periodMonthly.map((report) => report.areas[area.key]).filter((value): value is number => value != null);
+    const values = areaReports.map((report) => report.areas[area.key]).filter((value): value is number => value != null);
     return { key: area.key, label: area.label, latest: values.at(-1) ?? null, change: values.length > 1 ? values.at(-1)! - values[0] : null };
   });
   const done = tasks.filter((task) => task.status === "done");
   const doneInPeriod = done.filter((task) => inPeriod(task.updatedAt));
   const open = tasks.filter((task) => task.status !== "done").sort((a, b) => (a.dueDate || "9999").localeCompare(b.dueDate || "9999"));
   return {
-    months, series, areaTrends,
+    months, series, areaTrends, areaSource,
     latestConcept: latestWithDelta(concept), latestMonthly: latestWithDelta(monthly),
     monthsCovered: months.filter((month) => monthly.some((report) => monthOf(report.date) === month)).length,
     tasks: {

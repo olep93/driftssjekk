@@ -73,11 +73,11 @@ export default async function StoreDetail({ params, searchParams }: { params: Pr
 
     <div className="grid-2">
       <section className="panel">
-        <div className="panel-header"><h2>Områdene</h2><span className="muted small">Driftsgjennomganger</span></div>
+        <div className="panel-header"><h2>Områdene</h2><span className="muted small">{progress.areaSource === "monthly" ? "Driftsgjennomganger" : "Konseptsjekker (ingen driftsgjennomganger i perioden)"}</span></div>
         <table className="area-trend-table"><thead><tr><th>Område</th><th>Utvikling</th><th>Siste</th><th>Endring</th></tr></thead><tbody>
           {progress.areaTrends.map((area) => <tr key={area.key}>
             <td>{area.label}</td>
-            <td><Sparkline values={progress.series.map((month) => month.areas[area.key])} /></td>
+            <td><Sparkline values={progress.series.map((month) => (progress.areaSource === "monthly" ? month.areas : month.conceptAreas)[area.key])} /></td>
             <td><strong>{formatScore(area.latest)}</strong></td>
             <td><span className={`delta ${tone(area.change)}`}>{area.change === null ? "—" : signed(area.change)}</span></td>
           </tr>)}
