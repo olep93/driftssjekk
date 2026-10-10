@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { mergeDraft, type DraftFields } from "./draft-merge";
 
-const make = (): DraftFields => ({visitDate:"2026-10-08",summary:"",areas:{
+const make = (): DraftFields => ({visitDate:"2026-10-08",summary:"",strengths:"",improvements:"",areas:{
   drive_in:{score_quarters:null,comment:"",needs_follow_up:false},
   store:{score_quarters:null,comment:"",needs_follow_up:false},
   outdoor:{score_quarters:null,comment:"",needs_follow_up:false},
@@ -23,5 +23,13 @@ describe("shared draft merge", () => {
     theirs.areas.outdoor.comment="Kollegaens notat";
     expect(mergeDraft(base,mine,theirs).conflicts).toEqual(["Uteområde: kommentar"]);
     expect(mergeDraft(base,mine,theirs,"theirs").merged.areas.outdoor.comment).toBe("Kollegaens notat");
+  });
+  it("merges strengths and improvements like other text fields", () => {
+    const base=make(), mine=make(), theirs=make();
+    mine.strengths="Ryddig butikk";
+    theirs.improvements="Paller ved porten";
+    const result=mergeDraft(base,mine,theirs);
+    expect(result.conflicts).toEqual([]);
+    expect([result.merged.strengths,result.merged.improvements]).toEqual(["Ryddig butikk","Paller ved porten"]);
   });
 });

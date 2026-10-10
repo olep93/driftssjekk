@@ -33,7 +33,7 @@ export async function POST(_request: Request, { params }: { params: Promise<{ ve
     const { data: snapshot, error: snapshotError } = await auth.supabase.from("publication_snapshots")
       .select("content").eq("version_id", versionId).single();
     if (snapshotError || !snapshot) throw new Error("Publiseringsgrunnlag mangler");
-    const pdf = await buildReportPdf(snapshot.content as Parameters<typeof buildReportPdf>[0], admin);
+    const pdf = await buildReportPdf(snapshot.content as Parameters<typeof buildReportPdf>[0], admin, versionId);
     const { error: uploadError } = await admin.storage.from("report-exports")
       .upload(path, Buffer.from(pdf), { contentType: "application/pdf", upsert: false });
     if (uploadError && !/already exists|duplicate/i.test(uploadError.message)) throw uploadError;

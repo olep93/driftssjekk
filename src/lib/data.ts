@@ -4,7 +4,7 @@ import { averageFromQuarters, totalFromQuarters, type AreaKey } from "./scoring"
 export type Store = { id: string; cooperative_id: string; name: string; active: boolean };
 export type Round = { id: string; cooperative_id: string; title: string; sequence_no: number; status: string; planned_from: string | null; planned_to: string | null; summary: string };
 export type Report = { id: string; cooperative_id: string; store_id: string; round_id: string | null; event_id: string | null; kind: "inspection" | "self_check"; current_version_id: string | null; created_at: string; archived_at: string | null; withdrawn_at: string | null; created_by: string };
-export type Version = { id: string; report_id: string; version_no: number; state: "draft" | "published"; visit_date: string | null; summary: string; lock_version: number; updated_at?: string; published_at: string | null; change_reason: string | null; assessor_id: string };
+export type Version = { id: string; report_id: string; version_no: number; state: "draft" | "published"; visit_date: string | null; summary: string; strengths?: string; improvements?: string; lock_version: number; updated_at?: string; published_at: string | null; change_reason: string | null; assessor_id: string };
 export type Area = { version_id: string; area_key: AreaKey; score_quarters: number | null; comment: string; needs_follow_up: boolean };
 export type Action = { id: string; report_id: string; description: string; status: string; due_date: string | null; area_key: string | null };
 

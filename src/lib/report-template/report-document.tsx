@@ -27,8 +27,8 @@ export const tokens = {
 const bandColor = (score: number | null) => { const band = conceptBand(score); return band === "above" ? tokens.good : band === "below" ? tokens.bad : tokens.mid; };
 const bandSoft = (score: number | null) => { const band = conceptBand(score); return band === "above" ? tokens.goodSoft : band === "below" ? tokens.badSoft : tokens.midSoft; };
 // Captions are clipped so one long caption cannot push a row of photos onto the next page.
-const clip = (text: string, max: number) => text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text;
-const statusLabel: Record<string, string> = { open: "Åpen", in_progress: "Under arbeid", done: "Utført" };
+export const clip = (text: string, max: number) => text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text;
+export const statusLabel: Record<string, string> = { open: "Åpen", in_progress: "Under arbeid", done: "Utført" };
 
 export type ReportPhoto = { data: Buffer; width: number; height: number; caption: string };
 export type ReportArea = { key: string; label: string; score: number | null; comment: string; needsFollowUp: boolean; photos: ReportPhoto[] };
@@ -41,7 +41,7 @@ export type ReportDocumentData = {
   areas: ReportArea[]; tasks: ReportTask[];
 };
 
-const s = StyleSheet.create({
+export const s = StyleSheet.create({
   page: { fontFamily: "Plex", fontSize: 9.5, color: tokens.ink, paddingTop: 62, paddingBottom: 58, paddingHorizontal: marginX },
   header: { position: "absolute", top: 26, left: marginX, right: marginX, flexDirection: "row", justifyContent: "space-between", fontSize: 7.5, color: tokens.faint, letterSpacing: 0.6, textTransform: "uppercase" },
   footer: { position: "absolute", bottom: 26, left: marginX, right: marginX, fontSize: 7.5, color: tokens.faint, borderTopWidth: 0.6, borderTopColor: tokens.line, paddingTop: 7 },
@@ -61,10 +61,10 @@ const s = StyleSheet.create({
   rule: { height: 1.2, backgroundColor: tokens.ink, marginVertical: 14 },
 });
 
-function Chrome({ data }: { data: ReportDocumentData }) {
+export function Chrome({ label, storeName, date }: { label: string; storeName: string; date: string }) {
   return <>
-    <View style={s.header} fixed><Text style={s.brand}>DRIFTSSJEKK</Text><Text>{data.kindLabel}</Text></View>
-    <View style={s.footer} fixed><Text>{data.storeName} · {formatDate(data.visitDate)}</Text></View>
+    <View style={s.header} fixed><Text style={s.brand}>DRIFTSSJEKK</Text><Text>{label}</Text></View>
+    <View style={s.footer} fixed><Text>{storeName} · {date}</Text></View>
     <Text style={s.pageNumber} fixed render={({ pageNumber, totalPages }) => `Side ${pageNumber} av ${totalPages}`} />
   </>;
 }
@@ -147,8 +147,8 @@ function SummaryPage({ data }: { data: ReportDocumentData }) {
   </View>;
 }
 
-function PhotoGrid({ photos }: { photos: ReportPhoto[] }) {
-  const layout = photoLayout(photos.length);
+export function PhotoGrid({ photos, width }: { photos: ReportPhoto[]; width?: number }) {
+  const layout = photoLayout(photos.length, width);
   return <View style={{ flexDirection: "row", flexWrap: "wrap", marginTop: 14 }}>
     {photos.map((photo, index) => {
       const fitted = fitPhoto(photo.width, photo.height, layout.cellWidth, layout.cellHeight);
@@ -252,7 +252,7 @@ function Criteria() {
 export function ReportDocument({ data }: { data: ReportDocumentData }) {
   return <Document title={`${data.storeName} – ${data.kindLabel}`} author="Driftssjekk" language="nb-NO">
     <Page size="A4" style={s.page}>
-      <Chrome data={data} />
+      <Chrome label={data.kindLabel} storeName={data.storeName} date={formatDate(data.visitDate)} />
       <SummaryPage data={data} />
       {data.areas.map((area, index) => <AreaSection key={area.key} data={data} area={area} index={index} count={data.areas.length} />)}
       <TasksAndTrend data={data} />

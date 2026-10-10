@@ -3,6 +3,9 @@ import { areas, type AreaKey } from "./scoring";
 export type DraftFields = {
   visitDate: string;
   summary: string;
+  /** One point per line, at most three. */
+  strengths: string;
+  improvements: string;
   areas: Record<AreaKey, { score_quarters: number | null; comment: string; needs_follow_up: boolean }>;
 };
 
@@ -17,6 +20,8 @@ export function mergeDraft(base: DraftFields, mine: DraftFields, theirs: DraftFi
   const merged: DraftFields = {
     visitDate: value("Besøksdato", base.visitDate, mine.visitDate, theirs.visitDate),
     summary: value("Oppsummering", base.summary, mine.summary, theirs.summary),
+    strengths: value("Styrker", base.strengths, mine.strengths, theirs.strengths),
+    improvements: value("Forbedringer", base.improvements, mine.improvements, theirs.improvements),
     areas: {} as DraftFields["areas"],
   };
   for (const area of areas) {

@@ -16,7 +16,7 @@ export async function GET(request:Request){
       if(!job.version_id)throw new Error("PDF mangler versjon");
       const {data:row,error}=await admin.from("publication_snapshots").select("content").eq("version_id",job.version_id).single();
       if(error||!row)throw new Error("Publiseringsgrunnlag mangler");
-      const pdf=await buildReportPdf(row.content,admin);
+      const pdf=await buildReportPdf(row.content,admin,job.version_id);
       const path=reportPdfPath(job.version_id);
       const {error:uploadError}=await admin.storage.from("report-exports").upload(path,Buffer.from(pdf),{contentType:"application/pdf",upsert:false});
       if(uploadError && !/already exists|duplicate/i.test(uploadError.message))throw uploadError;

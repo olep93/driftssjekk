@@ -12,9 +12,9 @@ export type PhotoLayout = { columns: 1 | 2 | 3; cellWidth: number; cellHeight: n
  * Cells have a fixed 4:3 frame and photos are fitted inside it uncropped, so markings stay visible
  * and portrait and landscape photos line up.
  */
-export function photoLayout(count: number): PhotoLayout {
+export function photoLayout(count: number, width = contentWidth): PhotoLayout {
   const columns = count <= 1 ? 1 : count <= 4 ? 2 : 3;
-  const cellWidth = (contentWidth - photoGap * (columns - 1)) / columns;
+  const cellWidth = (width - photoGap * (columns - 1)) / columns;
   const cellHeight = columns === 1 ? 300 : cellWidth * 0.75;
   return { columns, cellWidth, cellHeight };
 }
