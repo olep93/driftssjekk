@@ -13,7 +13,8 @@ import type { ReportPhoto } from "./report-template/report-document";
  * PowerPoint cannot reliably embed fonts, so Arial stands in for the PDF's typefaces.
  */
 const c = { ink: "1D2836", muted: "647184", faint: "8B96A5", line: "E1E6EB", soft: "F3F5F7", accent: "2F6B86", good: "256D52", goodSoft: "E2F0E9", bad: "AC453D", badSoft: "F7E4E2", mid: "33475C", midSoft: "E7ECF1", flag: "9A5A12", flagSoft: "FBEFDF", white: "FFFFFF" };
-const W = 13.333, H = 7.5, X = 0.7, CW = W - 2 * X, font = "Arial";
+// Arial Narrow ships with Office and macOS; viewers without it fall back to Arial.
+const W = 13.333, H = 7.5, X = 0.7, CW = W - 2 * X, font = "Arial", display = "Arial Narrow";
 const band = (score: number | null) => { const value = conceptBand(score); return value === "above" ? [c.good, c.goodSoft] : value === "below" ? [c.bad, c.badSoft] : [c.mid, c.midSoft]; };
 const clean = (value: string) => value.replace(/[\u0000-\u0008\u000b-\u001f]/g, " ").trim();
 const clip = (text: string, max: number) => text.length > max ? `${text.slice(0, max - 1).trimEnd()}…` : text;
@@ -67,7 +68,8 @@ export async function buildReportPptx(snapshot: ReportSnapshot, supabase: Supaba
   }
   function base(label: string) {
     const s = pptx.addSlide(); slides.push(s); s.background = { color: c.white };
-    s.addText("DRIFTSSJEKK", { x: X, y: 0.3, w: 4, h: 0.22, fontFace: font, fontSize: 9, bold: true, color: c.ink, charSpacing: 2, margin: 0 });
+    block(s, X, 0.335, 0.13, 0.13, c.accent);
+    s.addText("DRIFTSSJEKK", { x: X + 0.2, y: 0.3, w: 4, h: 0.22, fontFace: display, fontSize: 10, bold: true, color: c.ink, charSpacing: 2, margin: 0 });
     s.addText(label.toUpperCase(), { x: W - X - 6, y: 0.3, w: 6, h: 0.22, fontFace: font, fontSize: 8.5, color: c.faint, charSpacing: 1, align: "right", margin: 0 });
     block(s, X, H - 0.48, CW, 0.012, c.line);
     s.addText(`${snapshot.store_name} · ${date}`, { x: X, y: H - 0.4, w: 8, h: 0.2, fontFace: font, fontSize: 8, color: c.faint, margin: 0 });
@@ -77,7 +79,7 @@ export async function buildReportPptx(snapshot: ReportSnapshot, supabase: Supaba
     s.addText(text.toUpperCase(), { x, y, w, h: 0.24, fontFace: font, fontSize: 10, bold: true, color: c.accent, charSpacing: 1.5, margin: 0 });
   }
   function title(s: PptxGenJS.Slide, text: string, y: number, x = X, w = CW, size = 30) {
-    s.addText(text, { x, y, w, h: 0.62, fontFace: font, fontSize: size, bold: true, color: c.ink, margin: 0, fit: "shrink", valign: "top" });
+    s.addText(text, { x, y, w, h: 0.66, fontFace: display, fontSize: size + 2, bold: true, color: c.ink, margin: 0, fit: "shrink", valign: "top" });
   }
   function pill(s: PptxGenJS.Slide, text: string, x: number, y: number, colors: string[], w = 2.4) {
     s.addText(text, { x, y, w, h: 0.32, fontFace: font, fontSize: 11, bold: true, color: colors[0], fill: { color: colors[1] }, align: "center", margin: 0 });
@@ -97,24 +99,24 @@ export async function buildReportPptx(snapshot: ReportSnapshot, supabase: Supaba
   cover.addShape(pptx.ShapeType.rect, { x: 0, y: 0, w: 0.18, h: H, fill: { color: c.accent }, line: { color: c.accent, width: 0 } });
   cover.addText("DRIFTSSJEKK", { x: X + 0.1, y: 0.55, w: 5, h: 0.26, fontFace: font, fontSize: 11, bold: true, color: "A9B6C6", charSpacing: 2, margin: 0 });
   cover.addText(kind.toUpperCase(), { x: X + 0.1, y: 2.0, w: 11, h: 0.3, fontFace: font, fontSize: 13, bold: true, color: "8FB8CC", charSpacing: 1.5, margin: 0 });
-  cover.addText(snapshot.store_name, { x: X + 0.1, y: 2.4, w: 11.6, h: 0.95, fontFace: font, fontSize: 44, bold: true, color: c.white, margin: 0, fit: "shrink" });
+  cover.addText(snapshot.store_name, { x: X + 0.1, y: 2.4, w: 11.6, h: 0.95, fontFace: display, fontSize: 44, bold: true, color: c.white, margin: 0, fit: "shrink" });
   cover.addText([snapshot.cooperative_name, snapshot.round_title, date].filter(Boolean).join("  ·  "), { x: X + 0.1, y: 3.4, w: 11.6, h: 0.32, fontFace: font, fontSize: 15, color: "C3CEDA", margin: 0 });
   const coverScoreColor = selfCheck ? c.white : conceptBand(snapshot.total) === "above" ? "7FD1AB" : conceptBand(snapshot.total) === "below" ? "F0A39B" : c.white;
-  cover.addText(formatScore(snapshot.total), { x: X + 0.1, y: 4.35, w: 3.6, h: 1.25, fontFace: font, fontSize: snapshot.total === null ? 28 : 72, bold: true, color: coverScoreColor, margin: 0 });
+  cover.addText(formatScore(snapshot.total), { x: X + 0.1, y: 4.35, w: 3.6, h: 1.25, fontFace: display, fontSize: snapshot.total === null ? 28 : 72, bold: true, color: coverScoreColor, margin: 0 });
   const coverLines = [selfCheck ? "Driftskarakter · intern progresjon" : partial ? "Delvurdering av tildelte områder" : conceptLabel(snapshot.total)];
   if (!selfCheck && context?.previousTotal != null && snapshot.total !== null) {
     const delta = snapshot.total - context.previousTotal;
     coverLines.push(Math.abs(delta) < 0.005 ? "Samme som forrige konseptsjekk" : `${delta > 0 ? "+" : "−"}${formatScore(Math.abs(delta))} siden forrige konseptsjekk`);
   }
   if (!selfCheck && context?.peer) coverLines.push(context.peer === "above" ? "Over snittet i samvirkelaget" : context.peer === "below" ? "Under snittet i samvirkelaget" : "På snittet i samvirkelaget");
-  cover.addText(coverLines.join("\n"), { x: X + 3.9, y: 4.55, w: 7.5, h: 1.0, fontFace: font, fontSize: 15, color: "C3CEDA", margin: 0, valign: "top", breakLine: false });
+  cover.addText(coverLines.join("\n"), { x: X + 3.2, y: 4.55, w: 7.5, h: 1.0, fontFace: font, fontSize: 15, color: "C3CEDA", margin: 0, valign: "top", breakLine: false });
   cover.addText(`Vurdert av ${snapshot.assessor_name || "ukjent"}${snapshot.version_no > 1 ? ` · versjon ${snapshot.version_no}` : ""}`, { x: X + 0.1, y: H - 0.62, w: 10, h: 0.24, fontFace: font, fontSize: 10, color: "8E9BAC", margin: 0 });
 
   // 2. Summary: headline, total and the area bars
   const summary = base(kind);
   title(summary, summaryHeadline(snapshot.kind, snapshot.total, reportAreas.map((area) => ({ label: area.label, score: area.score }))), 0.75);
   summary.addText(selfCheck ? "DRIFTSKARAKTER" : partial ? "DELVURDERING" : "TOTALKARAKTER", { x: X, y: 1.75, w: 3.4, h: 0.24, fontFace: font, fontSize: 9.5, bold: true, color: c.muted, charSpacing: 1.2, margin: 0 });
-  summary.addText(formatScore(snapshot.total), { x: X, y: 2.05, w: 3.4, h: 1.15, fontFace: font, fontSize: snapshot.total === null ? 24 : 66, bold: true, color: selfCheck ? c.ink : band(snapshot.total)[0], margin: 0 });
+  summary.addText(formatScore(snapshot.total), { x: X, y: 2.05, w: 3.4, h: 1.15, fontFace: display, fontSize: snapshot.total === null ? 24 : 66, bold: true, color: selfCheck ? c.ink : band(snapshot.total)[0], margin: 0 });
   if (!selfCheck) pill(summary, partial ? "Tildelte områder" : conceptLabel(snapshot.total), X, 3.3, band(snapshot.total));
   const rowsX = X + 4.1, rowsW = CW - 4.1, barX = rowsX + 2.2, barW = rowsW - 3.3;
   reportAreas.forEach((area, index) => {
@@ -124,7 +126,7 @@ export async function buildReportPptx(snapshot: ReportSnapshot, supabase: Supaba
     // A score of 1 still shows a short stub, so the bar never looks missing.
     if (area.score !== null) block(summary, barX, y + 0.14, Math.max(0.1, barW * (area.score - 1) / 9), 0.13, colors[0]);
     if (!selfCheck) block(summary, barX + barW * 5 / 9 - 0.008, y + 0.04, 0.016, 0.33, "8F9AA8");
-    summary.addText(formatScore(area.score), { x: rowsX + rowsW - 1.0, y, w: 1.0, h: 0.4, fontFace: font, fontSize: 19, bold: true, color: selfCheck ? c.ink : colors[0], align: "right", margin: 0, valign: "middle" });
+    summary.addText(formatScore(area.score), { x: rowsX + rowsW - 1.0, y, w: 1.0, h: 0.4, fontFace: display, fontSize: 19, bold: true, color: selfCheck ? c.ink : colors[0], align: "right", margin: 0, valign: "middle" });
     block(summary, rowsX, y + 0.55, rowsW, 0.01, c.line);
   });
   // Scale under the bars, with the concept grade highlighted.
@@ -163,9 +165,9 @@ export async function buildReportPptx(snapshot: ReportSnapshot, supabase: Supaba
     const s = base(kind), colors = selfCheck ? [c.ink, c.soft] : band(area.score);
     eyebrow(s, `Område ${index + 1} av ${reportAreas.length}`, 0.8);
     title(s, area.label, 1.1, X, CW, 34);
-    s.addText(formatScore(area.score), { x: X, y: 1.95, w: 2.6, h: 1.05, fontFace: font, fontSize: area.score === null ? 22 : 60, bold: true, color: colors[0], margin: 0 });
-    if (!selfCheck) pill(s, conceptLabel(area.score), X + 2.75, 2.35, colors, 2.0);
-    if (area.item.needs_follow_up) pill(s, "Krever oppfølging", X + 4.95, 2.35, [c.flag, c.flagSoft], 2.2);
+    s.addText(formatScore(area.score), { x: X, y: 1.95, w: 2.6, h: 1.05, fontFace: display, fontSize: area.score === null ? 22 : 60, bold: true, color: colors[0], margin: 0 });
+    if (!selfCheck) pill(s, conceptLabel(area.score), X + 2.15, 2.35, colors, 2.0);
+    if (area.item.needs_follow_up) pill(s, "Krever oppfølging", X + 4.3, 2.35, [c.flag, c.flagSoft], 2.2);
     s.addText(photos.length ? `${photos.length} ${photos.length === 1 ? "bilde" : "bilder"} på ${photos.length > 6 ? "de neste lysbildene" : "neste lysbilde"}` : "Ingen bilder fra området", { x: X, y: 3.1, w: 6, h: 0.26, fontFace: font, fontSize: 11, color: c.muted, margin: 0 });
     eyebrow(s, "Vurdering", 3.65);
     const comment = chunks(area.item.comment || "Ingen kommentar.", 900);
