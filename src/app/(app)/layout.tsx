@@ -13,7 +13,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   const operations = isOperations(memberships);
   const fullOperations = isFullOperations(memberships);
-  const monthly = memberships.some((m) => m.role === "store_manager");
+  const monthly = operations || memberships.some((m) => m.role === "store_manager");
   const admin = memberships.some((m) => m.role === "cooperative_admin");
   const primaryLinks = [
     { href: "/oversikt", label: "Oversikt", icon: BarChart3 },

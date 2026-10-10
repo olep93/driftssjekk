@@ -18,7 +18,7 @@ export default async function Overview({ searchParams }: { searchParams: Promise
   const focusStore = (focusCandidates || []).find((store) => store.id === requestedFocus && canOperateStore(ctx.memberships, store.cooperative_id, store.id));
   const cooperativeId = ctx.memberships.some((m) => m.cooperative_id === params.coop) ? params.coop! : focusStore?.cooperative_id || defaultCooperativeId(ctx.memberships)!;
   const operations = isOperations(ctx.memberships, cooperativeId);
-  const canMonthly = ctx.memberships.some((m) => m.role === "store_manager" && m.cooperative_id === cooperativeId);
+  const canMonthly = operations || ctx.memberships.some((m) => m.role === "store_manager" && m.cooperative_id === cooperativeId);
   // The event and cooperative lookups only matter for the summary view, but are cheap enough to start alongside the core data.
   const [{ stores, rounds, reports, versions, areas: assessments, actions }, { data: upcomingEvents }, { data: cooperatives }] = await Promise.all([
     loadCore(ctx.supabase, cooperativeId),

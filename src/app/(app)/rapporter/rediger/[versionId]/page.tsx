@@ -15,7 +15,8 @@ export default async function EditReport({ params }: { params: Promise<{ version
   const { data: report } = await ctx.supabase.from("reports").select("*").eq("id",version.report_id).maybeSingle();
   if (!report) notFound();
   if (report.kind === "inspection" && !canOperateStore(ctx.memberships,report.cooperative_id,report.store_id)) notFound();
-  if (report.kind === "self_check" && report.created_by !== ctx.userId) notFound();
+  // Monthly reviews are shared between the store's managers and its operations managers.
+  if (report.kind === "self_check" && !canOperateStore(ctx.memberships,report.cooperative_id,report.store_id) && !ctx.memberships.some((m) => m.role === "store_manager" && m.store_id === report.store_id)) notFound();
   if (report.event_id) {
     const { data: event } = await ctx.supabase.from("events").select("status").eq("id",report.event_id).maybeSingle();
     if (event?.status === "closed") return <><PageHeading eyebrow="Samling avsluttet" title="Vurderingen er låst" description="Driftssjef kan åpne samlingen igjen hvis vurderingen skal fullføres."/><Link className="button" href={`/samlinger/${report.event_id}`}>Tilbake til samlingen</Link></>;

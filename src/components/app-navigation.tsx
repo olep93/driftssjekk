@@ -9,10 +9,11 @@ type Permissions = { operations: boolean; fullOperations?: boolean; monthly: boo
 
 function createLinks({ operations, fullOperations, monthly, admin, storeId, monthlyStoreId }: Permissions) {
   const store = storeId ? `&store=${encodeURIComponent(storeId)}` : "";
-  const monthlyStore = monthlyStoreId ? `&store=${encodeURIComponent(monthlyStoreId)}` : "";
+  const monthlyTarget = storeId || monthlyStoreId;
+  const monthlyStore = monthlyTarget ? `&store=${encodeURIComponent(monthlyTarget)}` : "";
   return [
     ...(operations ? [{ href: `/rapporter/ny?type=inspection${store}`, label: "Uanmeldt konseptsjekk", detail: "Vurder et varehus", icon: ClipboardList }] : []),
-    ...(monthly ? [{ href: `/rapporter/ny?type=self_check${monthlyStore}`, label: "Månedlig driftsgjennomgang", detail: "Vurder eget varehus for intern progresjon", icon: FileText }] : []),
+    ...(monthly ? [{ href: `/rapporter/ny?type=self_check${monthlyStore}`, label: "Månedlig driftsgjennomgang", detail: "Intern progresjon, sammen med varehuset", icon: FileText }] : []),
     ...(fullOperations ? [{ href: "/runder/ny", label: "Konseptsjekkrunde", detail: "Planlegg flere varehusbesøk", icon: Plus }] : []),
     ...(operations ? [{ href: "/samlinger/ny", label: "Samling for varehussjefer", detail: "Inviter til en felles konseptrunde", icon: CalendarDays }] : []),
     ...(admin ? [{ href: "/administrasjon", label: "Ny bruker", detail: "Opprett bruker og tildel tilgang", icon: UserPlus }] : []),

@@ -36,7 +36,7 @@ export default async function Reports({ searchParams }: { searchParams: Promise<
     <PageHeading eyebrow="Rapporter" title="Rapporter" description="Pågående arbeid og publiserte vurderinger samlet på ett sted.">
       <Link className="button" href="/rapporter/utvikling">Konseptutvikling</Link>
       <Link className="button" href="/rapporter/utvikling?kind=self_check">Månedlig progresjon</Link>
-      <StartNewMenu operations={isOperations(ctx.memberships)} fullOperations={isFullOperations(ctx.memberships)} monthly={ctx.memberships.some((member) => member.role === "store_manager")} storeId={storeId || undefined}/>
+      <StartNewMenu operations={isOperations(ctx.memberships)} fullOperations={isFullOperations(ctx.memberships)} monthly={isOperations(ctx.memberships) || ctx.memberships.some((member) => member.role === "store_manager")} storeId={storeId || undefined}/>
     </PageHeading>
     <nav className="report-tabs" aria-label="Rapportvisning">
       <Link href={href({ view: "active", page: "1" })} aria-current={view === "active" ? "page" : undefined}>Pågående <span>{drafts.length}</span></Link>

@@ -21,7 +21,7 @@ export default function NewReportForm({ stores, coops, rounds, sharedDrafts, kin
   const [error, setError] = useState("");
   const availableCoops = coops.filter((coop) => stores.some((store) => store.cooperative_id === coop.id));
   const availableStores = stores.filter((store) => store.cooperative_id === coopId);
-  const matchingDrafts = kind === "inspection" ? sharedDrafts.filter((draft) => draft.storeId === storeId && draft.roundId === (roundId || null)) : [];
+  const matchingDrafts = sharedDrafts.filter((draft) => draft.storeId === storeId && draft.roundId === (kind === "inspection" ? roundId || null : null));
   const roundDraftExists = Boolean(roundId && matchingDrafts.length);
 
   async function create(event: React.FormEvent) {
