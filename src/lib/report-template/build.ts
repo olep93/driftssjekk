@@ -31,7 +31,7 @@ const yearBefore = (date: string) => { const d = new Date(`${date}T12:00:00Z`); 
  * checks in the same store, and the cooperative's recent concept checks. Uses the service client
  * because PDFs are also built by the background job; only the comparison result leaves this function.
  */
-async function loadContext(admin: SupabaseClient, versionId: string, snapshot: ReportSnapshot): Promise<Context> {
+export async function loadContext(admin: SupabaseClient, versionId: string, snapshot: ReportSnapshot): Promise<Context> {
   const { data: version } = await admin.from("report_versions").select("report_id,strengths,improvements").eq("id", versionId).maybeSingle();
   if (!version) return emptyContext;
   const context: Context = { ...emptyContext, strengths: lines(version.strengths), improvements: lines(version.improvements) };
@@ -47,17 +47,18 @@ async function loadContext(admin: SupabaseClient, versionId: string, snapshot: R
     admin.from("publication_snapshots").select("version_id,content").in("version_id", versionIds),
     admin.from("report_versions").select("id,visit_date").in("id", versionIds),
   ]);
-  const rows = (published || []).map((item) => ({
+  // Other reports only: another version of this same report (a correction) is not an earlier check.
+  const rows = (published || []).filter((item) => item.id !== version.report_id).map((item) => ({
     storeId: item.store_id as string,
     date: versions?.find((row) => row.id === item.current_version_id)?.visit_date as string | undefined,
     total: (snapshots?.find((row) => row.version_id === item.current_version_id)?.content as { total?: number | null } | undefined)?.total ?? null,
     versionId: item.current_version_id as string,
   })).filter((row): row is { storeId: string; date: string; total: number; versionId: string } => !!row.date && row.total !== null && row.date <= snapshot.visit_date);
-  const own = rows.filter((row) => row.storeId === report.store_id).sort((a, b) => a.date.localeCompare(b.date) || (a.versionId === versionId ? 1 : -1));
-  const index = own.findIndex((row) => row.versionId === versionId);
-  const upToThis = index >= 0 ? own.slice(0, index + 1) : [...own, { storeId: report.store_id, date: snapshot.visit_date, total: snapshot.total ?? 0, versionId }];
-  context.history = snapshot.total === null ? [] : upToThis.slice(-6).map((row) => ({ date: row.date, total: row.total }));
-  context.previousTotal = upToThis.length > 1 ? upToThis[upToThis.length - 2].total : null;
+  if (snapshot.total === null) return context;
+  const earlier = rows.filter((row) => row.storeId === report.store_id).sort((a, b) => a.date.localeCompare(b.date));
+  const upToThis = [...earlier, { date: snapshot.visit_date, total: snapshot.total }];
+  context.history = upToThis.slice(-6).map((row) => ({ date: row.date, total: row.total }));
+  context.previousTotal = earlier.length ? earlier[earlier.length - 1].total : null;
   // Latest concept check per other store in the twelve months before this visit.
   const since = yearBefore(snapshot.visit_date), latest = new Map<string, { date: string; total: number }>();
   for (const row of rows) {
