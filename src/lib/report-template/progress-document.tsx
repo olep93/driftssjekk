@@ -16,7 +16,7 @@ const signed = (value: number | null) => value === null ? "" : Math.abs(value) <
 const deltaColor = (value: number | null) => value === null || Math.abs(value) < 0.005 ? tokens.muted : value > 0 ? tokens.good : tokens.bad;
 const lowerBound = (values: (number | null)[]) => Math.min(4, Math.floor(Math.min(...values.filter((value): value is number => value !== null), 6) - 0.5));
 
-function Kpi({ label, value, unit, hint, hintColor, children }: { label: string; value: string; unit?: string; hint?: string; hintColor?: string; children?: React.ReactNode }) {
+export function Kpi({ label, value, unit, hint, hintColor, children }: { label: string; value: string; unit?: string; hint?: string; hintColor?: string; children?: React.ReactNode }) {
   return <View style={{ flexGrow: 1, flexBasis: 0, backgroundColor: tokens.soft, borderRadius: 6, padding: 11, marginRight: 8 }}>
     {/* Two label lines are reserved so the values line up across the boxes. */}
     <Text style={[s.label, { height: 18 }]}>{label}</Text>
