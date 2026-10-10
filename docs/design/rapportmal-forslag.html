@@ -1,0 +1,417 @@
+<title>Driftssjekk rapportmal</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@75..100,500..800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: one reading column for the argument, wide bands where the page and slide mockups sit side by side. */
+:root{
+  --bg:#f3f5f7; --surface:#ffffff; --fg:#14243a; --muted:#5d6b7c; --line:#dde3e9;
+  --accent:#e87526; --accent-soft:#fdeee2; --navy:#12253e;
+  --good:#28745c; --good-soft:#e5f2ec; --bad:#b4483f; --bad-soft:#f8e6e4; --neutral-soft:#e9eef3;
+  --paper:#ffffff; --paper-ink:#12253e; --paper-muted:#66768a; --paper-line:#e2e7ec; --paper-soft:#f3f6f8;
+  --photo-a:#8fa3b3; --photo-b:#b5a28c; --photo-c:#7d9488; --photo-d:#a6a0b6;
+  --display:"Archivo","Arial Narrow",Arial,sans-serif;
+  --body:"IBM Plex Sans",-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1824; --surface:#172334; --fg:#e6ecf2; --muted:#9aa9ba; --line:#2a3a4f;
+  --accent:#f08a43; --accent-soft:#3a2617; --navy:#9fb7d4;
+  --good:#5fbf98; --good-soft:#173328; --bad:#e3847b; --bad-soft:#3a1f1d; --neutral-soft:#223146;
+  --paper:#ffffff; --paper-ink:#12253e; --paper-muted:#66768a; --paper-line:#e2e7ec; --paper-soft:#f3f6f8;
+  --photo-a:#8fa3b3; --photo-b:#b5a28c; --photo-c:#7d9488; --photo-d:#a6a0b6;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1824; --surface:#172334; --fg:#e6ecf2; --muted:#9aa9ba; --line:#2a3a4f;
+  --accent:#f08a43; --accent-soft:#3a2617; --navy:#9fb7d4;
+  --good:#5fbf98; --good-soft:#173328; --bad:#e3847b; --bad-soft:#3a1f1d; --neutral-soft:#223146;
+  --paper:#ffffff; --paper-ink:#12253e; --paper-muted:#66768a; --paper-line:#e2e7ec; --paper-soft:#f3f6f8;
+  --photo-a:#8fa3b3; --photo-b:#b5a28c; --photo-c:#7d9488; --photo-d:#a6a0b6;
+  color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.6;padding-inline:20px;padding-block:0 80px}
+h1,h2,h3{font-family:var(--display);font-stretch:85%;letter-spacing:-.01em;line-height:1.1;text-wrap:balance;margin:0}
+h1{font-size:clamp(2.2rem,6vw,3.6rem);font-weight:800}
+h2{font-size:clamp(1.5rem,3.4vw,2rem);font-weight:750}
+h3{font-size:1.12rem;font-weight:700;font-stretch:90%}
+p{margin:0}
+a{color:inherit;text-decoration-color:var(--accent);text-underline-offset:3px}
+.wrap{max-width:1120px;margin:0 auto}
+.col{max-width:680px}
+.label{font-family:var(--mono);font-size:.74rem;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
+.lede{font-size:1.15rem;color:var(--muted);max-width:640px}
+section{padding-block:56px 0}
+.stack{display:grid;gap:14px}
+
+header.hero{padding-block:64px 8px;display:grid;gap:18px}
+.hero .meta{display:flex;flex-wrap:wrap;gap:8px 20px;color:var(--muted);font-size:.9rem}
+
+/* Findings */
+.findings{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:12px;overflow:hidden;margin-top:24px}
+.finding{background:var(--surface);padding:22px 22px 20px;display:grid;gap:8px;align-content:start;min-width:0}
+.finding .src{font-size:.82rem;color:var(--muted)}
+.finding .use{font-size:.92rem;border-left:3px solid var(--accent);padding-left:10px;margin-top:4px}
+
+/* Report structure list */
+.outline{display:grid;gap:0;margin-top:22px;border-top:1px solid var(--line)}
+.outline li{list-style:none;display:grid;grid-template-columns:3.2rem minmax(0,1fr) auto;gap:14px;padding:14px 0;border-bottom:1px solid var(--line);align-items:baseline}
+.outline .n{font-family:var(--mono);color:var(--muted);font-size:.85rem}
+.outline .what{min-width:0}
+.outline .what strong{display:block;font-family:var(--display);font-stretch:90%;font-size:1.05rem}
+.outline .what span{color:var(--muted);font-size:.92rem}
+.tag{font-size:.72rem;font-weight:600;border-radius:99px;padding:3px 9px;white-space:nowrap}
+.tag.new{background:var(--accent-soft);color:var(--accent)}
+.tag.same{background:var(--neutral-soft);color:var(--muted)}
+ol.outline{padding:0;margin-bottom:0}
+
+/* Mockup gallery */
+.gallery{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,250px),1fr));gap:28px;margin-top:26px;align-items:start}
+.gallery.slides{grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr))}
+figure{margin:0;display:grid;gap:10px;min-width:0}
+figcaption{font-size:.86rem;color:var(--muted)}
+figcaption strong{color:var(--fg);font-weight:600}
+.sample{font-family:var(--mono);font-size:.7rem;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+
+/* A4 page, scaled with container units so the mockup stays proportional at any width */
+.page{container-type:inline-size;aspect-ratio:1/1.414;width:100%;max-width:100%;background:var(--paper);color:var(--paper-ink);border-radius:3px;box-shadow:0 1px 2px rgba(10,20,35,.12),0 10px 30px rgba(10,20,35,.10);overflow:hidden;position:relative;font-family:var(--body)}
+.slide{container-type:inline-size;aspect-ratio:16/9;width:100%;max-width:100%;background:var(--paper);color:var(--paper-ink);border-radius:4px;box-shadow:0 1px 2px rgba(10,20,35,.12),0 10px 30px rgba(10,20,35,.10);overflow:hidden;position:relative;font-family:var(--body)}
+.pg{position:absolute;inset:0;padding:7cqw 7cqw 9cqw;display:flex;flex-direction:column;gap:3cqw}
+.pg-top{display:flex;justify-content:space-between;align-items:center;font-size:2.1cqw;color:var(--paper-muted);font-family:var(--mono);letter-spacing:.04em;text-transform:uppercase}
+.pg-foot{position:absolute;left:7cqw;right:7cqw;bottom:4cqw;display:flex;justify-content:space-between;font-size:1.9cqw;color:var(--paper-muted);border-top:.2cqw solid var(--paper-line);padding-top:1.4cqw}
+.brandmark{display:flex;align-items:center;gap:1.4cqw;font-family:var(--display);font-weight:800;color:var(--paper-ink);letter-spacing:.06em;font-size:2.3cqw}
+.brandmark i{width:3.6cqw;height:3.6cqw;border-radius:.8cqw;background:#e87526;display:inline-block}
+.p-eyebrow{font-family:var(--mono);font-size:2.1cqw;letter-spacing:.08em;text-transform:uppercase;color:#e87526}
+.p-h1{font-family:var(--display);font-weight:800;font-stretch:85%;font-size:7.4cqw;line-height:1;letter-spacing:-.01em}
+.p-h2{font-family:var(--display);font-weight:750;font-stretch:85%;font-size:5cqw;line-height:1.05}
+.p-sub{font-size:2.5cqw;color:var(--paper-muted)}
+.p-text{font-size:2.35cqw;line-height:1.5}
+.p-small{font-size:2cqw;color:var(--paper-muted);line-height:1.45}
+.rule{height:.25cqw;background:var(--paper-ink)}
+
+/* Score elements */
+.hero-score{display:grid;grid-template-columns:auto minmax(0,1fr);gap:4cqw;align-items:center;background:var(--paper-soft);border-radius:1.6cqw;padding:4cqw}
+.big{font-family:var(--display);font-weight:800;font-stretch:80%;font-size:15cqw;line-height:.85;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.big.good{color:#28745c}.big.bad{color:#b4483f}.big.mid{color:#12253e}
+.verdict{display:grid;gap:1.2cqw}
+.pill{display:inline-flex;align-items:center;gap:1cqw;font-size:2.1cqw;font-weight:600;border-radius:99px;padding:.8cqw 2cqw;width:max-content}
+.pill.good{background:#e3f1ea;color:#226a4e}.pill.bad{background:#f8e5e3;color:#a4433d}.pill.mid{background:#e8edf2;color:#344b62}
+.delta{font-family:var(--mono);font-size:2.2cqw;color:var(--paper-muted)}
+.delta b{color:#28745c;font-weight:500}
+
+/* Scale bar: 1–10 with 6 marked as concept */
+.scale{position:relative;height:2.2cqw;border-radius:99px;background:linear-gradient(90deg,#f1d3cf 0 55.5%,#dbe3ea 55.5% 55.5%,#d4e9de 55.5% 100%)}
+.scale .six{position:absolute;left:55.5%;top:-1cqw;bottom:-1cqw;width:.35cqw;background:#12253e}
+.scale .mark{position:absolute;top:50%;width:3cqw;height:3cqw;border-radius:50%;background:#12253e;border:.6cqw solid #fff;transform:translate(-50%,-50%);box-shadow:0 0 0 .2cqw #12253e}
+.scale-labels{display:flex;justify-content:space-between;font-family:var(--mono);font-size:1.7cqw;color:var(--paper-muted);margin-top:1cqw}
+
+.area-rows{display:grid;gap:0}
+.area-row{display:grid;grid-template-columns:minmax(0,1fr) 34% 9cqw;gap:2.4cqw;align-items:center;padding:2cqw 0;border-bottom:.2cqw solid var(--paper-line);font-size:2.4cqw}
+.area-row .name{font-weight:600}
+.bar{height:1.6cqw;border-radius:99px;background:var(--paper-soft);position:relative;overflow:visible}
+.bar span{position:absolute;left:0;top:0;bottom:0;border-radius:99px}
+.bar::after{content:"";position:absolute;left:55.5%;top:-.8cqw;bottom:-.8cqw;width:.25cqw;background:#12253e;opacity:.55}
+.num{font-family:var(--display);font-weight:750;font-stretch:85%;font-size:3cqw;text-align:right;font-variant-numeric:tabular-nums}
+.num.good{color:#28745c}.num.bad{color:#b4483f}.num.mid{color:#12253e}
+
+.two{display:grid;grid-template-columns:1fr 1fr;gap:3cqw}
+.box{background:var(--paper-soft);border-radius:1.4cqw;padding:2.6cqw;display:grid;gap:1.2cqw;align-content:start}
+.box h4{margin:0;font-family:var(--mono);font-size:1.9cqw;letter-spacing:.07em;text-transform:uppercase;font-weight:500}
+.box ul{margin:0;padding-left:3cqw;font-size:2.2cqw;line-height:1.45;display:grid;gap:.6cqw}
+.box.plus h4{color:#226a4e}.box.minus h4{color:#a4433d}
+
+.photo{border-radius:1cqw;position:relative;overflow:hidden}
+.photo::after{content:"";position:absolute;inset:0;background:repeating-linear-gradient(135deg,rgba(255,255,255,.10) 0 2cqw,rgba(255,255,255,0) 2cqw 4cqw)}
+.photo .cap{position:absolute;left:0;right:0;bottom:0;padding:3cqw 1.6cqw 1.2cqw;font-size:1.8cqw;color:#fff;background:linear-gradient(transparent,rgba(10,20,35,.6));z-index:1}
+.photo .no{position:absolute;left:1.4cqw;top:1.4cqw;z-index:1;font-family:var(--mono);font-size:1.7cqw;background:#fff;color:#12253e;border-radius:.6cqw;padding:.3cqw 1cqw}
+.pa{background:var(--photo-a)}.pb{background:var(--photo-b)}.pc{background:var(--photo-c)}.pd{background:var(--photo-d)}
+.photos-2{display:grid;grid-template-columns:1.4fr 1fr;grid-template-rows:1fr 1fr;gap:1.6cqw;flex:1;min-height:0}
+.photos-2 .photo:first-child{grid-row:1 / 3}
+
+.task{display:grid;grid-template-columns:7cqw minmax(0,1fr) auto;gap:2.4cqw;align-items:start;padding:2.2cqw 0;border-bottom:.2cqw solid var(--paper-line)}
+.task .thumb{aspect-ratio:1;border-radius:.8cqw}
+.task .t{font-size:2.3cqw;font-weight:600;line-height:1.35}
+.task .m{font-size:1.9cqw;color:var(--paper-muted);margin-top:.5cqw}
+.status{font-size:1.8cqw;font-weight:600;border-radius:99px;padding:.6cqw 1.6cqw;white-space:nowrap}
+.status.open{background:#e8edf2;color:#344b62}.status.work{background:#fdeee2;color:#b3601a}.status.done{background:#e3f1ea;color:#226a4e}
+.trend{display:flex;align-items:flex-end;gap:1.6cqw;height:12cqw;padding-top:1cqw}
+.trend div{flex:1;border-radius:.6cqw .6cqw 0 0;background:#c9d4de;position:relative}
+.trend div.now{background:#e87526}
+.trend div span{position:absolute;top:-3cqw;left:0;right:0;text-align:center;font-family:var(--mono);font-size:1.6cqw;color:var(--paper-muted)}
+.trend-x{display:flex;gap:1.6cqw;font-family:var(--mono);font-size:1.5cqw;color:var(--paper-muted)}
+.trend-x span{flex:1;text-align:center}
+
+/* Slides */
+.sl{position:absolute;inset:0;padding:5.5cqw 6cqw 6cqw;display:flex;flex-direction:column;gap:2.4cqw}
+.sl-top{display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:1.3cqw;letter-spacing:.06em;text-transform:uppercase;color:var(--paper-muted)}
+.sl-title{font-family:var(--display);font-weight:800;font-stretch:85%;font-size:4.2cqw;line-height:1.02;letter-spacing:-.01em}
+.sl-foot{position:absolute;left:6cqw;right:6cqw;bottom:2.6cqw;display:flex;justify-content:space-between;font-size:1.15cqw;color:var(--paper-muted)}
+.slide .big{font-size:11cqw}
+.slide .pill{font-size:1.4cqw;padding:.5cqw 1.3cqw}
+.slide .area-row{font-size:1.6cqw;padding:1.3cqw 0;grid-template-columns:minmax(0,1fr) 40% 6cqw}
+.slide .num{font-size:2.1cqw}
+.slide .bar{height:1.1cqw}
+.slide .photo .cap{font-size:1.2cqw;padding:2cqw 1.2cqw .9cqw}
+.slide .photo .no{font-size:1.1cqw}
+.cover-slide{background:#12253e;color:#fff}
+.cover-slide .sl-top,.cover-slide .sl-foot{color:#9fb1c5}
+.cover-slide .stripe{position:absolute;left:0;top:0;bottom:0;width:1.6cqw;background:#e87526}
+
+/* Decisions */
+.decisions{display:grid;gap:12px;margin-top:22px}
+.decision{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px;display:grid;gap:6px}
+.decision p{color:var(--muted);font-size:.94rem}
+.decision .rec{color:var(--fg);font-size:.94rem}
+.decision .rec b{color:var(--accent);font-weight:600}
+
+.plan{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:14px;margin-top:22px}
+.step{border-top:3px solid var(--accent);padding-top:12px;display:grid;gap:6px}
+.step .when{font-family:var(--mono);font-size:.76rem;color:var(--muted);letter-spacing:.05em;text-transform:uppercase}
+.step p{font-size:.94rem;color:var(--muted)}
+.sources{font-size:.86rem;color:var(--muted);display:grid;gap:4px;margin-top:14px;padding-left:18px}
+@media (max-width:560px){.outline li{grid-template-columns:2.2rem minmax(0,1fr)}.outline .tag{grid-column:2;justify-self:start}}
+</style>
+
+<div class="wrap">
+<header class="hero">
+  <p class="label">Forslag · Rapportmal for PDF og PowerPoint</p>
+  <h1>En rapport som svarer før den forklarer</h1>
+  <p class="lede">Forslag til ny, fast layout for konseptsjekk og driftsgjennomgang, basert på hvordan revisjons-, inspeksjons- og mystery shopping-rapporter er bygget opp i bransjen. Skissene under bruker eksempeldata for Obs Bygg Tønsberg.</p>
+  <div class="meta"><span>Utarbeidet 10. oktober 2026</span><span>Gjelder PDF, PowerPoint og oppfølgingsrapport</span></div>
+</header>
+
+<section>
+  <div class="col stack">
+    <p class="label">Hva bransjen gjør</p>
+    <h2>Seks mønstre som går igjen</h2>
+    <p>Rapporter fra butikkrevisjoner, hotellkjedenes kvalitetsrevisjoner, mystery shopping og Mattilsynets tilsyn bygger på de samme grepene. Under står hva hvert grep er og hvordan det brukes i forslaget.</p>
+  </div>
+  <div class="findings">
+    <article class="finding"><h3>Svaret står først</h3><p>Første side har totalkarakter, styrker og de viktigste forbedringene, så en leder får hovedbildet uten å lese videre. Detaljene kommer etterpå.</p><p class="src">Mystery shopping-rapporter, konsulentrapporter (pyramideprinsippet)</p><p class="use">Ny sammendragsside med totalkarakter, plassering på skalaen, tre styrker og tre forbedringer.</p></article>
+    <article class="finding"><h3>Fast form gjør rapporter sammenlignbare</h3><p>Samme rekkefølge, samme skala og samme plassering hver gang gjør at man kan sammenligne varehus og besøk over tid.</p><p class="src">Mystery shopping-leverandører, SafetyCulture-maler</p><p class="use">Låst mal med fast sideoppsett for hvert område. Ingen sider som flyter etter tekstlengden.</p></article>
+    <article class="finding"><h3>Tallet og fortellingen hører sammen</h3><p>En karakter uten begrunnelse er lite verdt. Bransjen advarer mot toppkarakter uten skriftlig vurdering.</p><p class="src">Coyle Hospitality, revisjonsmaler</p><p class="use">Karakter, kommentar og bilder står på samme side for hvert område, med kommentaren tett ved tallet.</p></article>
+    <article class="finding"><h3>Bilder er bevis for et funn</h3><p>Bilder knyttes til et konkret område og gjerne til et tiltak, ikke lagt i et vedlegg til slutt.</p><p class="src">Butikkrevisjonsmaler i SafetyCulture-biblioteket</p><p class="use">Bildene vises i fast rutenett på områdesiden, nummerert og med bildetekst.</p></article>
+    <article class="finding"><h3>Tiltaksplan med ansvar og frist</h3><p>Hotellkjedenes revisjoner ender i en «Management Action Plan». Hvert avvik har tiltak, ansvarlig, frist og kontroll.</p><p class="src">InterContinental Quality Evaluation System, Hilton Standards of Operations</p><p class="use">Egen side for oppgaver i rapporten, og oppfølgingsrapporten fra forrige uke i samme stil.</p></article>
+    <article class="finding"><h3>Utvikling og sammenligning</h3><p>Ett besøk sier lite alene. Gode rapporter viser forrige resultat og et snitt å måle mot, og ser etter mønstre over flere besøk.</p><p class="src">Mystery shopping-rapportering, Grace Hill PerformanceHQ</p><p class="use">«Siden sist» ved totalkarakteren og en liten utviklingsgraf over de siste besøkene.</p></article>
+  </div>
+  <p class="col" style="margin-top:18px;color:var(--muted);font-size:.94rem">Mattilsynets smilefjes er et godt norsk eksempel på at én enkel visuell dom virker, og at fire hovedområder med egne vurderinger er lett å forstå. Driftssjekk har allerede samme grunnform: fire områder og én samlet karakter.</p>
+</section>
+
+<section>
+  <div class="col stack">
+    <p class="label">Oppbygging</p>
+    <h2>Rapporten side for side</h2>
+    <p>Samme rekkefølge i PDF og PowerPoint. Månedlig driftsgjennomgang bruker samme mal uten konseptrangering og kriterievedlegg.</p>
+  </div>
+  <ol class="outline">
+    <li><span class="n">1</span><div class="what"><strong>Sammendrag</strong><span>Varehus, dato, vurderer, totalkarakter på skalaen, siden sist, de fire områdene, styrker og forbedringer.</span></div><span class="tag new">Ny</span></li>
+    <li><span class="n">2–5</span><div class="what"><strong>Ett oppslag per område</strong><span>Karakter med konseptlinje, vurdering, «krever oppfølging» og bilderutenett. Lange tekster og mange bilder fortsetter på neste side med samme topptekst.</span></div><span class="tag same">Fornyet</span></li>
+    <li><span class="n">6</span><div class="what"><strong>Tiltak og oppfølging</strong><span>Oppgavene som er gitt fra rapporten, med område, frist og status. Kommer bare når det finnes oppgaver.</span></div><span class="tag new">Ny</span></li>
+    <li><span class="n">7</span><div class="what"><strong>Utvikling</strong><span>Totalkarakter for de siste konseptsjekkene i varehuset, og snittet i samvirkelaget.</span></div><span class="tag new">Ny</span></li>
+    <li><span class="n">8</span><div class="what"><strong>Vurderingskriterier</strong><span>Kompakt vedlegg med skalaen og hva hver karakter betyr. Bare i konseptsjekker.</span></div><span class="tag same">Fornyet</span></li>
+  </ol>
+</section>
+
+<section>
+  <div class="col stack">
+    <p class="label">PDF · A4 stående</p>
+    <h2>Skisser av sidene</h2>
+    <p>Skissene viser layouten, ikke ferdig grafikk. Bildene er plassholdere.</p>
+  </div>
+  <div class="gallery">
+    <figure>
+      <div class="page" role="img" aria-label="Skisse av sammendragssiden">
+        <div class="pg">
+          <div class="pg-top"><span class="brandmark"><i></i>DRIFTSSJEKK</span><span>Uanmeldt konseptsjekk</span></div>
+          <div style="display:grid;gap:1.4cqw;margin-top:2cqw">
+            <span class="p-eyebrow">Coop Sørøst · Vårrunden 2027</span>
+            <span class="p-h1">Obs Bygg Tønsberg</span>
+            <span class="p-sub">Besøk 8. okt. 2026 · Vurdert av Kari Nordmann · Versjon 1</span>
+          </div>
+          <div class="hero-score">
+            <span class="big good">6,44</span>
+            <div class="verdict">
+              <span class="pill good">Over konsept</span>
+              <span class="delta">Siden sist <b>+0,44</b> · S-lag 6,20</span>
+              <div><div class="scale"><span class="six"></span><span class="mark" style="left:60.4%"></span></div><div class="scale-labels"><span>1</span><span>6 = konsept</span><span>10</span></div></div>
+            </div>
+          </div>
+          <div class="area-rows">
+            <div class="area-row"><span class="name">Drive-In</span><div class="bar"><span style="width:63.9%;background:#28745c"></span></div><span class="num good">6,75</span></div>
+            <div class="area-row"><span class="name">Butikk</span><div class="bar"><span style="width:69.4%;background:#28745c"></span></div><span class="num good">7,25</span></div>
+            <div class="area-row"><span class="name">Uteområde</span><div class="bar"><span style="width:50%;background:#b4483f"></span></div><span class="num bad">5,50</span></div>
+            <div class="area-row"><span class="name">Varemottak</span><div class="bar"><span style="width:58.3%;background:#28745c"></span></div><span class="num good">6,25</span></div>
+          </div>
+          <div class="two">
+            <div class="box plus"><h4>Styrker</h4><ul><li>Ryddig og godt merket butikk</li><li>Kampanjer satt opp etter plan</li><li>Rask service i Drive-In</li></ul></div>
+            <div class="box minus"><h4>Forbedringer</h4><ul><li>Paller og avfall ved porten</li><li>Skilting på uteområdet</li><li>Orden i varemottaket</li></ul></div>
+          </div>
+        </div>
+        <div class="pg-foot"><span>Obs Bygg Tønsberg · 8. okt. 2026</span><span>Side 1 av 8</span></div>
+      </div>
+      <figcaption><strong>Sammendrag.</strong> Alt en leder trenger på én side. Fargen på tallet følger konseptgrensen ved 6.</figcaption>
+    </figure>
+
+    <figure>
+      <div class="page" role="img" aria-label="Skisse av en områdeside">
+        <div class="pg">
+          <div class="pg-top"><span>Obs Bygg Tønsberg</span><span>Område 3 av 4</span></div>
+          <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:3cqw">
+            <div style="display:grid;gap:1cqw"><span class="p-eyebrow">Område 3</span><span class="p-h1" style="font-size:8cqw">Uteområde</span></div>
+            <div style="text-align:right;display:grid;gap:1cqw;justify-items:end"><span class="big bad" style="font-size:12cqw">5,50</span><span class="pill bad">Under konsept</span></div>
+          </div>
+          <div class="rule"></div>
+          <div style="display:grid;gap:1.2cqw">
+            <span class="p-eyebrow" style="color:#66768a">Vurdering</span>
+            <p class="p-text">Uteområdet er stort sett ryddig ved inngangen, men det står tomme paller og avfall ved porten mot varemottaket. Skiltingen til hagesenteret er falmet og vanskelig å se fra parkeringen.</p>
+            <span class="pill" style="background:#fdeee2;color:#b3601a">Krever oppfølging</span>
+          </div>
+          <div class="photos-2">
+            <div class="photo pa"><span class="no">1</span><span class="cap">Paller ved porten mot varemottaket</span></div>
+            <div class="photo pb"><span class="no">2</span><span class="cap">Falmet skilt mot hagesenter</span></div>
+            <div class="photo pc"><span class="no">3</span><span class="cap">Ryddig inngangsparti</span></div>
+          </div>
+        </div>
+        <div class="pg-foot"><span>Obs Bygg Tønsberg · 8. okt. 2026</span><span>Side 4 av 8</span></div>
+      </div>
+      <figcaption><strong>Områdeside.</strong> Tallet står øverst til høyre på hver områdeside, slik at man finner det likt hver gang. Det første bildet får mest plass.</figcaption>
+    </figure>
+
+    <figure>
+      <div class="page" role="img" aria-label="Skisse av siden for tiltak og utvikling">
+        <div class="pg">
+          <div class="pg-top"><span>Obs Bygg Tønsberg</span><span>Tiltak og utvikling</span></div>
+          <div style="display:grid;gap:1cqw"><span class="p-eyebrow">Tiltak</span><span class="p-h2">Tre oppgaver til varehuset</span></div>
+          <div>
+            <div class="task"><div class="thumb pa"></div><div><div class="t">Fjern paller og avfall ved porten mot varemottaket</div><div class="m">Uteområde · Frist 15. okt.</div></div><span class="status work">Under arbeid</span></div>
+            <div class="task"><div class="thumb pb"></div><div><div class="t">Bytt skiltet mot hagesenteret</div><div class="m">Uteområde · Frist 1. nov.</div></div><span class="status open">Åpen</span></div>
+            <div class="task"><div class="thumb pd"></div><div><div class="t">Merk opp soner i varemottaket</div><div class="m">Varemottak · Frist 22. okt.</div></div><span class="status done">Utført</span></div>
+          </div>
+          <div style="display:grid;gap:1cqw;margin-top:2cqw"><span class="p-eyebrow">Utvikling</span><span class="p-h2">Fjerde besøk på rad med fremgang</span></div>
+          <div>
+            <div class="trend"><div style="height:54%"><span>5,40</span></div><div style="height:57.5%"><span>5,75</span></div><div style="height:59.4%"><span>5,94</span></div><div style="height:60%"><span>6,00</span></div><div class="now" style="height:64.4%"><span>6,44</span></div></div>
+            <div class="trend-x"><span>Okt. 25</span><span>Jan. 26</span><span>Apr. 26</span><span>Jul. 26</span><span>Okt. 26</span></div>
+          </div>
+          <p class="p-small">Snittet for konseptsjekker i Coop Sørøst siste 12 måneder er 6,20.</p>
+        </div>
+        <div class="pg-foot"><span>Obs Bygg Tønsberg · 8. okt. 2026</span><span>Side 6 av 8</span></div>
+      </div>
+      <figcaption><strong>Tiltak og utvikling.</strong> Overskriften sier konklusjonen, ikke bare temaet. Utviklingsgrafen kommer fra tidligere publiserte rapporter.</figcaption>
+    </figure>
+  </div>
+  <p class="sample" style="margin-top:14px">Alle navn, tall og funn i skissene er eksempeldata.</p>
+</section>
+
+<section>
+  <div class="col stack">
+    <p class="label">PowerPoint · 16:9</p>
+    <h2>Samme mal på lysbilder</h2>
+    <p>Lysbildene er laget for å vises på møter. Ett budskap per lysbilde, store tall og lite tekst. Den fulle vurderingen ligger i notatfeltet til hvert lysbilde.</p>
+  </div>
+  <div class="gallery slides">
+    <figure>
+      <div class="slide cover-slide" role="img" aria-label="Skisse av tittellysbilde">
+        <span class="stripe"></span>
+        <div class="sl">
+          <div class="sl-top"><span class="brandmark" style="color:#fff;font-size:1.6cqw"><i style="width:2.4cqw;height:2.4cqw"></i>DRIFTSSJEKK</span><span>Uanmeldt konseptsjekk</span></div>
+          <div style="margin-top:auto;display:grid;gap:1.4cqw">
+            <span class="p-eyebrow" style="font-size:1.4cqw">Coop Sørøst · 8. oktober 2026</span>
+            <span class="sl-title" style="font-size:6.4cqw">Obs Bygg Tønsberg</span>
+            <span style="display:flex;align-items:baseline;gap:2cqw"><span class="big" style="font-size:9cqw;color:#7fd1ab">6,44</span><span style="font-size:1.6cqw;color:#c9d6e3">Over konsept · +0,44 siden sist</span></span>
+          </div>
+        </div>
+        <div class="sl-foot"><span>Vurdert av Kari Nordmann</span><span>1</span></div>
+      </div>
+      <figcaption><strong>Tittel.</strong> Resultatet står allerede på første lysbilde.</figcaption>
+    </figure>
+    <figure>
+      <div class="slide" role="img" aria-label="Skisse av lysbilde med alle områder">
+        <div class="sl">
+          <div class="sl-top"><span>Obs Bygg Tønsberg</span><span>Sammendrag</span></div>
+          <span class="sl-title">Over konsept, men uteområdet trekker ned</span>
+          <div style="display:grid;grid-template-columns:30% minmax(0,1fr);gap:4cqw;align-items:center;flex:1">
+            <div style="display:grid;gap:1.2cqw"><span class="big good">6,44</span><span class="pill good">Over konsept</span></div>
+            <div class="area-rows">
+              <div class="area-row"><span class="name">Drive-In</span><div class="bar"><span style="width:63.9%;background:#28745c"></span></div><span class="num good">6,75</span></div>
+              <div class="area-row"><span class="name">Butikk</span><div class="bar"><span style="width:69.4%;background:#28745c"></span></div><span class="num good">7,25</span></div>
+              <div class="area-row"><span class="name">Uteområde</span><div class="bar"><span style="width:50%;background:#b4483f"></span></div><span class="num bad">5,50</span></div>
+              <div class="area-row"><span class="name">Varemottak</span><div class="bar"><span style="width:58.3%;background:#28745c"></span></div><span class="num good">6,25</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="sl-foot"><span>Obs Bygg Tønsberg · 8. okt. 2026</span><span>2</span></div>
+      </div>
+      <figcaption><strong>Sammendrag.</strong> Tittelen lages fra tallene: hvor varehuset står og hvilket område som avviker mest.</figcaption>
+    </figure>
+    <figure>
+      <div class="slide" role="img" aria-label="Skisse av lysbilde for ett område">
+        <div class="sl">
+          <div class="sl-top"><span>Obs Bygg Tønsberg</span><span>Område 3 av 4</span></div>
+          <div style="display:grid;grid-template-columns:38% minmax(0,1fr);gap:3.4cqw;flex:1;min-height:0">
+            <div style="display:grid;gap:1.6cqw;align-content:start">
+              <span class="sl-title">Uteområde</span>
+              <span style="display:flex;align-items:center;gap:1.6cqw"><span class="big bad" style="font-size:8cqw">5,50</span><span class="pill bad">Under konsept</span></span>
+              <p style="font-size:1.45cqw;line-height:1.5;margin:0">Paller og avfall ved porten mot varemottaket. Falmet skilt mot hagesenteret.</p>
+            </div>
+            <div class="photos-2" style="gap:1.2cqw">
+              <div class="photo pa"><span class="no">1</span><span class="cap">Paller ved porten</span></div>
+              <div class="photo pb"><span class="no">2</span><span class="cap">Falmet skilt</span></div>
+              <div class="photo pc"><span class="no">3</span><span class="cap">Inngangsparti</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="sl-foot"><span>Obs Bygg Tønsberg · 8. okt. 2026</span><span>5</span></div>
+      </div>
+      <figcaption><strong>Område.</strong> Fast to-delt oppsett. Flere enn tre bilder går videre på et eget bildelysbilde.</figcaption>
+    </figure>
+  </div>
+</section>
+
+<section>
+  <div class="col stack">
+    <p class="label">Det nye innholdet</p>
+    <h2>Hvor tallene kommer fra</h2>
+    <p>Det meste kan lages automatisk fra data appen allerede har. To ting krever et valg.</p>
+  </div>
+  <div class="decisions col">
+    <div class="decision"><h3>Siden sist og utviklingsgraf</h3><p>Hentes fra tidligere publiserte konseptsjekker i samme varehus. Månedlige gjennomganger sammenlignes bare med hverandre.</p></div>
+    <div class="decision"><h3>Snitt i samvirkelaget</h3><p>Regnes fra konseptsjekker de siste 12 månedene. Varehussjefer ser i dag ikke andre varehus, så tallet viser et snitt og aldri enkeltvarehus.</p><p class="rec"><b>Må avklares:</b> om snittet skal vises i rapporter varehusene får se.</p></div>
+    <div class="decision"><h3>Styrker og forbedringer</h3><p>Kan foreslås automatisk fra områdene med høyest og lavest karakter, men gode punkter krever at vurdereren skriver dem.</p><p class="rec"><b>Anbefaling:</b> to korte, valgfrie felt i kladden, «Styrker» og «Forbedringer», med inntil tre punkter hver. Uten innhold faller boksene bort.</p></div>
+    <div class="decision"><h3>Overskrifter som sier konklusjonen</h3><p>Lages fra tallene med faste setninger, for eksempel «Over konsept, men uteområdet trekker ned». Ingen fri tekstgenerering, så formuleringen er forutsigbar.</p></div>
+  </div>
+</section>
+
+<section>
+  <div class="col stack">
+    <p class="label">Teknisk løsning</p>
+    <h2>Hvordan det bygges</h2>
+    <p>I dag tegnes PDF-en med koordinater, linje for linje. Det gjør oppsettet stivt og gir «?» for tegn utenfor vestlig tegnsett. Forslaget er å lage rapporten som en designet nettside med fast mal, og gjøre den om til PDF med en innebygd nettleser på serveren. Det gir skikkelig typografi, sidetall, faste marger og full Unicode. PowerPoint får faste lysbildeoppsett i samme stil, og alle tre eksportene deler farger, skrift og regler.</p>
+  </div>
+  <div class="plan">
+    <div class="step"><span class="when">Steg 1</span><h3>Mal med testdata</h3><p>Ferdig PDF-mal du kan se på og kommentere før den kobles til appen.</p></div>
+    <div class="step"><span class="when">Steg 2</span><h3>Ny PDF i appen</h3><p>Rapport-PDF og oppfølgings-PDF på ny mal. Gamle rapporter kan lages på nytt.</p></div>
+    <div class="step"><span class="when">Steg 3</span><h3>PowerPoint</h3><p>Faste lysbildeoppsett, notatfelt med full vurdering, samme mal for samlinger.</p></div>
+    <div class="step"><span class="when">Steg 4</span><h3>Nytt innhold</h3><p>Siden sist, utvikling, snitt og feltene for styrker og forbedringer.</p></div>
+  </div>
+</section>
+
+<section>
+  <div class="col stack">
+    <p class="label">Kilder</p>
+    <ul class="sources">
+      <li><a href="https://coylehospitality.com/blog/what-does-a-mystery-shopping-report-look-like/">Coyle Hospitality: What Does a Mystery Shopping Report Look Like?</a></li>
+      <li><a href="https://coylehospitality.com/?p=13549">Coyle Hospitality: What Is a Mystery Shopping Report?</a></li>
+      <li><a href="https://info.gracehill.com/hubfs/All%20GH%20Website%20File%20Downloads/Mfam%20Brochures%20and%20Flyers/Mystery%20Shopping%20in%20PerformanceHQ%20Reporting%20Guide.pdf">Grace Hill: Mystery Shopping in PerformanceHQ Reporting Guide</a></li>
+      <li><a href="https://Elsmar.com/Cove_Premium/QES-Hotel_User%20Manual.pdf">InterContinental: Quality Evaluation System, brukermanual</a></li>
+      <li><a href="https://www.hifranchise.com/wp-content/uploads/sites/2/2024/12/1.02-Standards-of-Operations.pdf">Hilton franchise: Standards of Operations</a></li>
+      <li><a href="https://wp-website.safetyculture.com/wp-content/uploads/sites/3/2024/06/LQA-Standards-Checklist-Sample-Report-SafetyCulture.pdf">SafetyCulture: LQA Standards Checklist, eksempelrapport</a></li>
+      <li><a href="https://safetyculture.com/library/retail/sheike-visual-merchandiser-audit-layout-report">SafetyCulture: Visual merchandiser audit layout report</a></li>
+      <li><a href="https://help.safetyculture.com/003025">SafetyCulture: Report layouts</a></li>
+      <li><a href="https://www.olabi.ooo/blog/retail-audit-guide-types-checklists-insights/">Olabi: Retail audit guide</a></li>
+      <li><a href="https://icaew.com/-/media/corporate/files/technical/bpm/reporting-kpis-design-guidelines-final.ashx">ICAEW: Reporting KPIs, design guidelines</a></li>
+      <li><a href="https://www.mattilsynet.no/mat-og-drikke/forbrukere/smilefjesordningen">Mattilsynet: Smilefjesordningen</a></li>
+      <li><a href="https://data.norge.no/en/datasets/374f32e7-b9e8-3fe1-bc18-d54025a8291f/kravpunkter-for-smilefjestilsyn-pa-serveringssteder">Data.norge.no: Kravpunkter for smilefjestilsyn</a></li>
+    </ul>
+  </div>
+</section>
+</div>
