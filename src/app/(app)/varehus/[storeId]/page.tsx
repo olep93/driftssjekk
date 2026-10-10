@@ -1,46 +1,26 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getContext, isOperations } from "@/lib/auth";
-import { loadCore, scoreFor } from "@/lib/data";
 import { areas, formatDate, formatScore } from "@/lib/scoring";
 import { PageHeading, Score } from "@/components/ui";
 import { StartNewMenu } from "@/components/app-navigation";
 import { ProgressChart, Sparkline, TaskChart } from "@/components/progress-charts";
 import { reportKindLabel } from "@/lib/report-kind";
-import { periodLabels, storeProgress, type Period, type ProgressReport } from "@/lib/store-progress";
+import { periodLabels, type Period } from "@/lib/store-progress";
+import { canViewStore, loadStoreProgress, parsePeriod } from "@/lib/store-progress-data";
 
-const today = () => new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Oslo" }).format(new Date());
 const signed = (value: number | null) => value === null ? "" : Math.abs(value) < 0.005 ? "±0,00" : `${value > 0 ? "+" : "−"}${formatScore(Math.abs(value))}`;
 const tone = (value: number | null) => value === null || Math.abs(value) < 0.005 ? "flat" : value > 0 ? "up" : "down";
 
 export default async function StoreDetail({ params, searchParams }: { params: Promise<{ storeId: string }>; searchParams: Promise<{ periode?: string }> }) {
   const [{ storeId }, query] = await Promise.all([params, searchParams]);
-  const period: Period = query.periode === "6m" || query.periode === "year" ? query.periode : "12m";
+  const period = parsePeriod(query.periode);
   const ctx = await getContext();
   const { data: store } = await ctx.supabase.from("stores").select("*").eq("id", storeId).maybeSingle();
-  if (!store) notFound();
-  if (!ctx.memberships.some((membership) => membership.cooperative_id === store.cooperative_id && (membership.role === "cooperative_admin" || membership.store_id === storeId || (membership.role === "operations" && membership.store_id === null)))) notFound();
-  const data = await loadCore(ctx.supabase, store.cooperative_id);
-  const reports = data.reports.filter((report) => report.store_id === storeId && report.current_version_id && !report.withdrawn_at);
-  const visitDate = (reportId: string) => data.versions.find((version) => version.id === data.reports.find((report) => report.id === reportId)?.current_version_id)?.visit_date || "";
-  const drafts = data.reports.filter((report) => report.store_id === storeId && !report.archived_at && !report.withdrawn_at).flatMap((report) => data.versions.filter((version) => version.report_id === report.id && version.state === "draft").map((version) => ({ report, version })));
-  const storeReportIds = data.reports.filter((report) => report.store_id === storeId && !report.withdrawn_at).map((report) => report.id);
-  const currentVersionIds = reports.map((report) => report.current_version_id!);
-  // Task dates and highlights are not part of the shared core data, so they are read here.
-  const [{ data: taskRows }, { data: highlightRows }] = await Promise.all([
-    storeReportIds.length ? ctx.supabase.from("actions").select("id,report_id,description,area_key,status,due_date,created_at,updated_at").in("report_id", storeReportIds) : Promise.resolve({ data: [] }),
-    currentVersionIds.length ? ctx.supabase.from("report_versions").select("id,report_id,visit_date,strengths,improvements").in("id", currentVersionIds) : Promise.resolve({ data: [] }),
-  ]);
-  const progressReports = reports.filter((report) => !report.event_id).map((report): ProgressReport => {
-    const versionId = report.current_version_id!;
-    return { id: report.id, kind: report.kind === "self_check" ? "self_check" : "inspection", date: visitDate(report.id), total: scoreFor(report, data.versions, data.areas),
-      areas: Object.fromEntries(areas.map((area) => { const quarters = data.areas.find((row) => row.version_id === versionId && row.area_key === area.key)?.score_quarters; return [area.key, quarters == null ? null : quarters / 4]; })) };
-  }).filter((report) => report.date);
-  const progress = storeProgress(progressReports, (taskRows || []).map((task) => ({ id: task.id, description: task.description, areaKey: task.area_key, status: task.status, dueDate: task.due_date, createdAt: task.created_at, updatedAt: task.updated_at })), period, today());
-  const highlights = (highlightRows || []).filter((row) => (row.strengths || "").trim() || (row.improvements || "").trim()).sort((a, b) => (b.visit_date || "").localeCompare(a.visit_date || ""))[0];
-  const lines = (value: string | null) => (value || "").split("\n").map((line) => line.trim()).filter(Boolean);
+  if (!store || !canViewStore(ctx.memberships, store)) notFound();
+  const { today, progress, drafts, history, highlights } = await loadStoreProgress(ctx.supabase, store, period);
   const operations = isOperations(ctx.memberships, store.cooperative_id);
-  const history = [...reports].sort((a, b) => visitDate(b.id).localeCompare(visitDate(a.id)));
+  const download = (format: "pdf" | "pptx") => `/api/stores/${storeId}/progress?periode=${period}&format=${format}`;
 
   return <>
     <div className="breadcrumb"><Link href="/varehus">Varehus</Link> / {store.name}</div>
@@ -52,6 +32,9 @@ export default async function StoreDetail({ params, searchParams }: { params: Pr
       <div className="page-actions store-shortcuts">
         <Link className="button" href={`/rapporter?view=active&store=${storeId}`}>Pågående ({drafts.length})</Link>
         <Link className="button" href={`/oppfolging?store=${storeId}`}>Alle oppgaver</Link>
+        {/* Plain links: the browser downloads the generated file and shows its own progress. */}
+        <a className="button dark" href={download("pdf")} download>Fremdriftsrapport (PDF)</a>
+        <a className="button" href={download("pptx")} download>PowerPoint</a>
       </div>
     </div>
 
@@ -87,23 +70,23 @@ export default async function StoreDetail({ params, searchParams }: { params: Pr
         <div className="panel-header"><h2>Oppgaver</h2><Link className="panel-link" href={`/oppfolging?store=${storeId}`}>Se alle</Link></div>
         <TaskChart series={progress.series} />
         <div className="task-mini-list">{progress.tasks.openList.slice(0, 5).map((task) => {
-          const overdue = task.dueDate && task.dueDate < today();
+          const overdue = task.dueDate && task.dueDate < today;
           return <Link className="list-card" href={`/oppfolging/${task.id}`} key={task.id}><div><h3>{task.description}</h3><p>{areas.find((area) => area.key === task.areaKey)?.label || "Generelt"} · {task.dueDate ? `Frist ${formatDate(task.dueDate)}` : "Ingen frist"}</p></div>{overdue ? <span className="status withdrawn">Forfalt</span> : <span className={`status ${task.status === "in_progress" ? "active" : ""}`}>{task.status === "in_progress" ? "Under arbeid" : "Åpen"}</span>}</Link>;
         })}{!progress.tasks.openList.length && <p className="muted small">Ingen åpne oppgaver.</p>}</div>
       </section>
     </div>
 
     {highlights && <section className="panel">
-      <div className="panel-header"><h2>Siste styrker og forbedringer</h2><span className="muted small">{formatDate(highlights.visit_date)}</span></div>
+      <div className="panel-header"><h2>Siste styrker og forbedringer</h2><span className="muted small">{formatDate(highlights.date)}</span></div>
       <div className="grid-2 highlight-boxes">
-        {lines(highlights.strengths).length > 0 && <div className="highlight-box good"><span className="label">Styrker</span><ul>{lines(highlights.strengths).map((line) => <li key={line}>{line}</li>)}</ul></div>}
-        {lines(highlights.improvements).length > 0 && <div className="highlight-box bad"><span className="label">Forbedringer</span><ul>{lines(highlights.improvements).map((line) => <li key={line}>{line}</li>)}</ul></div>}
+        {highlights.strengths.length > 0 && <div className="highlight-box good"><span className="label">Styrker</span><ul>{highlights.strengths.map((line) => <li key={line}>{line}</li>)}</ul></div>}
+        {highlights.improvements.length > 0 && <div className="highlight-box bad"><span className="label">Forbedringer</span><ul>{highlights.improvements.map((line) => <li key={line}>{line}</li>)}</ul></div>}
       </div>
     </section>}
 
     <section className="panel">
       <div className="panel-header"><h2>Alle rapporter</h2><Link className="panel-link" href={`/rapporter?view=history&store=${storeId}`}>Rapporthistorikk</Link></div>
-      {history.slice(0, 12).map((report) => <Link className="list-card" href={`/rapporter/${report.id}`} key={report.id}><div><h3>{reportKindLabel(report.kind, report.event_id)}</h3><p>{formatDate(visitDate(report.id))}</p></div><Score value={scoreFor(report, data.versions, data.areas)} neutral={report.kind === "self_check"} /></Link>)}
+      {history.slice(0, 12).map((report) => <Link className="list-card" href={`/rapporter/${report.id}`} key={report.id}><div><h3>{reportKindLabel(report.kind, report.eventId)}</h3><p>{formatDate(report.date)}</p></div><Score value={report.total} neutral={report.kind === "self_check"} /></Link>)}
       {!history.length && <p className="muted">Ingen publiserte rapporter.</p>}
     </section>
   </>;
